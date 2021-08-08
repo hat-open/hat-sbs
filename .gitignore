@@ -1,0 +1,6 @@
+/.doit.db
+/build
+/src_py/hat/sbs/_cserializer.*
+/test_pytest/.coverage
+/test_pytest/profile
+__pycache__
