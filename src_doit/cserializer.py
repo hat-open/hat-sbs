@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import sysconfig
 import sys
+import sysconfig
 
-from hat.doit import common
+from hat.doit.c import CBuild
 
 
 __all__ = ['task_cserializer',
@@ -74,7 +74,7 @@ _cc_flags = ['-fPIC', '-O2']
 # _cc_flags = ['-fPIC', '-O0', '-ggdb']
 _ld_flags = _get_ld_flags()
 
-_build = common.CBuild(
+_build = CBuild(
     src_paths=[src_c_dir / 'hat/sbs.c',
                *(src_c_dir / 'py/_cserializer').rglob('*.c')],
     src_dir=src_c_dir,
