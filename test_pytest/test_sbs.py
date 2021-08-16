@@ -229,3 +229,20 @@ def test_repository_initialization_with_repository(serializer):
 def test_invalid_repository_initialization_argument_type():
     with pytest.raises(Exception):
         sbs.Repository(None)
+
+
+@pytest.mark.parametrize("value", [
+    0, 0xFFFF_FFFF, 0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF_FFFF
+])
+@pytest.mark.parametrize("serializer", serializers)
+def test_large_integer(value, serializer):
+    repo = sbs.Repository("module M", serializer=serializer)
+
+    if serializer is sbs.CSerializer and value > 0x7FFF_FFFF_FFFF_FFFF:
+        with pytest.raises(OverflowError):
+            repo.encode(None, 'Integer', value)
+
+    else:
+        encoded_value = repo.encode(None, 'Integer', value)
+        decoded_value = repo.decode(None, 'Integer', encoded_value)
+        assert value == decoded_value

@@ -46,7 +46,7 @@ static ssize_t encode_boolean(hat_buff_t *buff, PyObject *value) {
 
 
 static ssize_t encode_integer(hat_buff_t *buff, PyObject *value) {
-    long v = PyLong_AsLong(value);
+    long long v = PyLong_AsLongLong(value);
     if (v == -1 && PyErr_Occurred())
         return -1;
     return hat_sbs_encode_integer(buff, v);
@@ -264,7 +264,7 @@ static PyObject *decode_integer(hat_buff_t *buff) {
     int64_t value;
     if (hat_sbs_decode_integer(buff, &value))
         return NULL;
-    return PyLong_FromLong(value);
+    return PyLong_FromLongLong(value);
 }
 
 
