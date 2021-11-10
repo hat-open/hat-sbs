@@ -1,7 +1,9 @@
 from pathlib import Path
+import sys
 
 from hat.doit import common
-from hat.doit.py import (build_wheel,
+from hat.doit.py import (default_python_tag,
+                         build_wheel,
                          run_pytest,
                          run_flake8)
 from hat.doit.docs import (SphinxOutputType,
@@ -39,6 +41,8 @@ def task_build():
     """Build"""
 
     def build():
+        python_tag = (default_python_tag if sys.platform == 'linux' else
+                      f'cp{sys.version_info.major}{sys.version_info.minor}')
         build_wheel(
             src_dir=src_py_dir,
             dst_dir=build_py_dir,
@@ -47,6 +51,7 @@ def task_build():
             url='https://github.com/hat-open/hat-sbs',
             license=common.License.APACHE2,
             packages=['hat'],
+            python_tag=python_tag,
             platform_specific=True)
 
     return {'actions': [build],

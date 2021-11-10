@@ -51,3 +51,6 @@ class PySerializer(Serializer):
 
     def decode(refs, t, data):
         return _pyserializer.decode(refs, t, data)
+
+
+default_serializer: Serializer = CSerializer if _cserializer else PySerializer

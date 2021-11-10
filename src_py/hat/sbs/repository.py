@@ -21,7 +21,7 @@ class Repository:
 
     def __init__(self,
                  *args: typing.Union['Repository', pathlib.Path, str],
-                 serializer=serializer.CSerializer):
+                 serializer: typing.Optional[typing.Type[serializer.Serializer]] = None):  # NOQA
         self._serializer = serializer
         self._modules = list(_parse_args(args))
         self._refs = evaluator.evaluate_modules(self._modules)
@@ -33,7 +33,8 @@ class Repository:
                ) -> bytes:
         """Encode value."""
         ref = common.Ref(module_name, type_name)
-        return self._serializer.encode(self._refs, ref, value)
+        ser = self._serializer or serializer.default_serializer
+        return ser.encode(self._refs, ref, value)
 
     def decode(self,
                module_name: typing.Optional[str],
@@ -42,7 +43,8 @@ class Repository:
                ) -> common.Data:
         """Decode data."""
         ref = common.Ref(module_name, type_name)
-        return self._serializer.decode(self._refs, ref, memoryview(data))
+        ser = self._serializer or serializer.default_serializer
+        return ser.decode(self._refs, ref, memoryview(data))
 
     def to_json(self) -> json.Data:
         """Export repository content as json serializable data.
@@ -57,7 +59,7 @@ class Repository:
     @staticmethod
     def from_json(data: typing.Union[pathlib.PurePath, common.Data],
                   *,
-                  serializer=serializer.CSerializer
+                  serializer: typing.Optional[typing.Type[serializer.Serializer]] = None  # NOQA
                   ) -> 'Repository':
         """Create new repository from content exported as json serializable
         data.
