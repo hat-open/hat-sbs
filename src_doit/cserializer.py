@@ -12,6 +12,7 @@ __all__ = ['task_cserializer',
 
 
 build_dir = Path('build')
+deps_dir = Path('deps')
 src_c_dir = Path('src_c')
 src_py_dir = Path('src_py')
 
@@ -38,49 +39,54 @@ def _get_cpp_flags():
     include_path = sysconfig.get_path('include')
 
     if sys.platform == 'linux':
-        return [f'-I{include_path}']
+        yield f'-I{include_path}'
 
     elif sys.platform == 'darwin':
-        return []
+        pass
 
     elif sys.platform == 'win32':
-        return [f'-I{include_path}']
+        yield f'-I{include_path}'
 
-    raise Exception('unsupported platform')
+    else:
+        raise Exception('unsupported platform')
+
+    yield f"-I{deps_dir / 'hat-util/src_c'}"
+    yield f'-I{src_c_dir}'
+    yield '-DMODULE_NAME="_cserializer"'
 
 
 def _get_ld_flags():
     if sys.platform == 'linux':
-        return []
+        pass
 
     elif sys.platform == 'darwin':
         python_version = f'{sys.version_info.major}.{sys.version_info.minor}'
         stdlib_path = (Path(sysconfig.get_path('stdlib')) /
                        f'config-{python_version}-darwin')
-        return [f"-L{stdlib_path}",
-                f"-lpython{python_version}"]
+        yield f"-L{stdlib_path}"
+        yield f"-lpython{python_version}"
 
     elif sys.platform == 'win32':
         data_path = sysconfig.get_path('data')
         python_version = f'{sys.version_info.major}{sys.version_info.minor}'
-        return [f"-L{data_path}",
-                f"-lpython{python_version}"]
+        yield f"-L{data_path}"
+        yield f"-lpython{python_version}"
 
-    raise Exception('unsupported platform')
+    else:
+        raise Exception('unsupported platform')
 
 
-_cpp_flags = _get_cpp_flags()
+_cpp_flags = list(_get_cpp_flags())
 _cc_flags = ['-fPIC', '-O2']
 # _cc_flags = ['-fPIC', '-O0', '-ggdb']
-_ld_flags = _get_ld_flags()
+_ld_flags = list(_get_ld_flags())
 
 _build = CBuild(
     src_paths=[src_c_dir / 'hat/sbs.c',
                *(src_c_dir / 'py/_cserializer').rglob('*.c')],
     src_dir=src_c_dir,
     build_dir=build_dir / 'cserializer',
-    cpp_flags=[*_cpp_flags,
-               '-DMODULE_NAME="_cserializer"',
-               f"-I{src_c_dir}"],
+    cpp_flags=_cpp_flags,
     cc_flags=_cc_flags,
-    ld_flags=_ld_flags)
+    ld_flags=_ld_flags,
+    task_dep=['deps'])

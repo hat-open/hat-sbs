@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "buff.h"
+#include <hat/buff.h>
 
 #define HAT_SBS_SUCCESS 0
 #define HAT_SBS_ERROR 1

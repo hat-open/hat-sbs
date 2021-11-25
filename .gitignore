@@ -1,5 +1,7 @@
 /.doit.db
+/.peru
 /build
+/deps
 /src_py/hat/sbs/_cserializer.*
 /test_pytest/.coverage
 /test_pytest/profile

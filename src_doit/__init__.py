@@ -19,6 +19,8 @@ __all__ = ['task_clean_all',
            'task_check',
            'task_test',
            'task_docs',
+           'task_deps',
+           'task_format',
            *cserializer.__all__]
 
 
@@ -79,3 +81,18 @@ def task_docs():
                         (build_pdoc, ['hat.sbs',
                                       build_docs_dir / 'py_api'])],
             'task_dep': ['cserializer']}
+
+
+def task_deps():
+    """Dependencies"""
+    return {'actions': [f'{sys.executable} -m peru sync']}
+
+
+def task_format():
+    """Format"""
+    files = [*Path('src_c').rglob('*.c'),
+             *Path('src_c').rglob('*.h')]
+    for f in files:
+        yield {'name': str(f),
+               'actions': [f'clang-format -style=file -i {f}'],
+               'file_dep': [f]}
