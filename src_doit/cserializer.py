@@ -84,7 +84,6 @@ _ld_flags = list(_get_ld_flags())
 _build = CBuild(
     src_paths=[src_c_dir / 'hat/sbs.c',
                *(src_c_dir / 'py/_cserializer').rglob('*.c')],
-    src_dir=src_c_dir,
     build_dir=build_dir / 'cserializer',
     cpp_flags=_cpp_flags,
     cc_flags=_cc_flags,
