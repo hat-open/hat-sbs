@@ -35,16 +35,15 @@ build_docs_dir = build_dir / 'docs'
 
 def task_clean_all():
     """Clean all"""
-    return {'actions': [(common.rm_rf, [build_dir,
-                                        cserializer.cserializer_path])]}
+    return {'actions': [(common.rm_rf, [
+        build_dir,
+        *(src_py_dir / 'hat/sbs').glob('_cserializer.*')])]}
 
 
 def task_build():
     """Build"""
 
     def build():
-        python_tag = (default_python_tag if sys.platform == 'linux' else
-                      f'cp{sys.version_info.major}{sys.version_info.minor}')
         build_wheel(
             src_dir=src_py_dir,
             dst_dir=build_py_dir,
@@ -52,9 +51,7 @@ def task_build():
             description='Hat simple binary serializer',
             url='https://github.com/hat-open/hat-sbs',
             license=common.License.APACHE2,
-            packages=['hat'],
-            python_tag=python_tag,
-            platform_specific=True)
+            packages=['hat'])
 
     return {'actions': [build],
             'task_dep': ['cserializer']}

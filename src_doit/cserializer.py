@@ -3,7 +3,9 @@ from pathlib import Path
 import sys
 import sysconfig
 
-from hat.doit.c import CBuild
+from hat.doit.c import (local_platform,
+                        Platform,
+                        CBuild)
 
 
 __all__ = ['task_cserializer',
@@ -16,76 +18,111 @@ deps_dir = Path('deps')
 src_c_dir = Path('src_c')
 src_py_dir = Path('src_py')
 
-cserializer_path = (src_py_dir / 'hat/sbs/_cserializer').with_suffix(
-    '.pyd' if sys.platform == 'win32' else '.so')
+platforms = [local_platform]
+if local_platform == Platform.LINUX:
+    platforms.append(Platform.WINDOWS)
+
+python_versions = [(sys.version_info.major, sys.version_info.minor)]
+if local_platform == Platform.LINUX:
+    for python_version in [(3, 8), (3, 9), (3, 10)]:
+        if python_version not in python_versions:
+            python_versions.append(python_version)
 
 
 def task_cserializer():
     """Build cserializer"""
-    return _build.get_task_lib(cserializer_path)
+    for build, cserializer_path in zip(_builds, _cserializer_paths):
+        yield from build.get_task_lib(cserializer_path)
 
 
 def task_cserializer_obj():
     """Build cserializer .o files"""
-    yield from _build.get_task_objs()
+    for build in _builds:
+        yield from build.get_task_objs()
 
 
 def task_cserializer_dep():
     """Build cserializer .d files"""
-    yield from _build.get_task_deps()
+    for build in _builds:
+        yield from build.get_task_deps()
 
 
-def _get_cpp_flags():
-    include_path = sysconfig.get_path('include')
+def _get_cserializer_path(platform, major, minor):
+    if platform == Platform.LINUX:
+        suffix = f'.cpython-{major}{minor}-x86_64-linux-gnu.so'
 
-    if sys.platform == 'linux':
-        yield f'-I{include_path}'
+    elif platform == Platform.DARWIN:
+        suffix = f'.cpython-{major}{minor}-darwin.so'
 
-    elif sys.platform == 'darwin':
-        pass
-
-    elif sys.platform == 'win32':
-        yield f'-I{include_path}'
+    elif platform == Platform.WINDOWS:
+        suffix = f'.cp{major}{minor}-win_amd64.pyd'
 
     else:
-        raise Exception('unsupported platform')
+        raise ValueError('unsupported platform')
+
+    return (src_py_dir / 'hat/sbs/_cserializer').with_suffix(suffix)
+
+
+def _get_cpp_flags(platform, major, minor):
+    if platform == local_platform:
+        if python_version == (sys.version_info.major, sys.version_info.minor):
+            include_path = sysconfig.get_path('include')
+            if include_path:
+                yield f'-I{include_path}'
+
+        else:
+            yield f'-I/usr/include/python{major}.{minor}'
+
+    elif platform == Platform.WINDOWS:
+        yield f'-I/usr/x86_64-w64-mingw32/include/python{major}{minor}'
+
+    else:
+        raise ValueError('unsupported platform')
 
     yield f"-I{deps_dir / 'hat-util/src_c'}"
     yield f'-I{src_c_dir}'
     yield '-DMODULE_NAME="_cserializer"'
 
 
-def _get_ld_flags():
-    if sys.platform == 'linux':
-        pass
+def _get_cc_flags(platform, major, minor):
+    yield '-fPIC'
+    yield '-O2'
+    # yield '-O0'
+    # yield '-ggdb'
 
-    elif sys.platform == 'darwin':
-        python_version = f'{sys.version_info.major}.{sys.version_info.minor}'
-        stdlib_path = (Path(sysconfig.get_path('stdlib')) /
-                       f'config-{python_version}-darwin')
-        yield f"-L{stdlib_path}"
-        yield f"-lpython{python_version}"
 
-    elif sys.platform == 'win32':
-        data_path = sysconfig.get_path('data')
-        python_version = f'{sys.version_info.major}{sys.version_info.minor}'
-        yield f"-L{data_path}"
-        yield f"-lpython{python_version}"
+def _get_ld_flags(platform, major, minor):
+    if platform == local_platform:
+        if platform == 'darwin':
+            stdlib_path = (Path(sysconfig.get_path('stdlib')) /
+                           f'config-{major}.{minor}-darwin')
+            yield f"-L{stdlib_path}"
+
+        elif sys.platform == 'win32':
+            data_path = sysconfig.get_path('data')
+            yield f"-L{data_path}"
+
+    if platform == Platform.WINDOWS:
+        yield f"-lpython{major}{minor}"
 
     else:
-        raise Exception('unsupported platform')
+        yield f"-lpython{major}.{minor}"
 
 
-_cpp_flags = list(_get_cpp_flags())
-_cc_flags = ['-fPIC', '-O2']
-# _cc_flags = ['-fPIC', '-O0', '-ggdb']
-_ld_flags = list(_get_ld_flags())
+_src_paths = [src_c_dir / 'hat/sbs.c',
+              *(src_c_dir / 'py/_cserializer').rglob('*.c')]
 
-_build = CBuild(
-    src_paths=[src_c_dir / 'hat/sbs.c',
-               *(src_c_dir / 'py/_cserializer').rglob('*.c')],
-    build_dir=build_dir / 'cserializer',
-    cpp_flags=_cpp_flags,
-    cc_flags=_cc_flags,
-    ld_flags=_ld_flags,
-    task_dep=['deps'])
+_builds = [CBuild(src_paths=_src_paths,
+                  build_dir=(build_dir / 'cserializer' /
+                             f'{platform.name.lower()}{major}{minor}'),
+                  platform=platform,
+                  cpp_flags=list(_get_cpp_flags(platform, major, minor)),
+                  cc_flags=list(_get_cc_flags(platform, major, minor)),
+                  ld_flags=list(_get_ld_flags(platform, major, minor)),
+                  task_dep=['deps'])
+           for platform in platforms
+           for major, minor in python_versions]
+
+_cserializer_paths = [_get_cserializer_path(platform, major, minor)
+                      for platform in platforms
+                      for major, minor in python_versions]
