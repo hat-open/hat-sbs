@@ -99,7 +99,7 @@ def _get_ld_flags():
     if common.target_platform == common.Platform.WINDOWS:
         yield f"-lpython{major}{minor}"
 
-    else:
+    elif common.target_platform == common.Platform.DARWIN:
         yield f"-lpython{major}.{minor}"
 
 
