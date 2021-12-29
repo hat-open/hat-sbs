@@ -2,8 +2,7 @@ from pathlib import Path
 import sys
 
 from hat.doit import common
-from hat.doit.py import (default_python_tag,
-                         build_wheel,
+from hat.doit.py import (build_wheel,
                          run_pytest,
                          run_flake8)
 from hat.doit.docs import (SphinxOutputType,
@@ -29,7 +28,8 @@ src_py_dir = Path('src_py')
 pytest_dir = Path('test_pytest')
 docs_dir = Path('docs')
 
-build_py_dir = build_dir / 'py'
+build_py_dir = build_dir / 'py' / (f'{common.target_platform.name.lower()}_'
+                                   f'{common.target_py_version.name.lower()}')
 build_docs_dir = build_dir / 'docs'
 
 
@@ -51,7 +51,9 @@ def task_build():
             description='Hat simple binary serializer',
             url='https://github.com/hat-open/hat-sbs',
             license=common.License.APACHE2,
-            packages=['hat'])
+            packages=['hat'],
+            py_versions=[common.target_py_version],
+            platform=common.target_platform)
 
     return {'actions': [build],
             'task_dep': ['cserializer']}
