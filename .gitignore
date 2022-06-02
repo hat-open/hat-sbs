@@ -1,6 +1,7 @@
 /.doit.db
 /.peru
 /build
+/compile_flags.txt
 /deps
 /src_py/hat/sbs/_cserializer.*
 /test_pytest/.coverage
