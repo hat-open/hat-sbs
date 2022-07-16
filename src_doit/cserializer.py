@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from hat.doit import common
-from hat.doit.c import (target_ext_suffix,
+from hat.doit.c import (get_target_ext_suffix,
                         get_py_cpp_flags,
                         get_py_ld_flags,
                         CBuild)
@@ -13,11 +13,18 @@ __all__ = ['task_cserializer',
            'task_cserializer_cleanup']
 
 
+# py_limited_api = common.PyVersion.CP310
+# py_limited_api = next(iter(common.PyVersion))
+py_limited_api = None
+
+
 build_dir = Path('build')
 deps_dir = Path('deps')
 src_c_dir = Path('src_c')
 src_py_dir = Path('src_py')
 
+
+target_ext_suffix = get_target_ext_suffix(py_limited_api)
 cserializer_path = (src_py_dir /
                     'hat/sbs/_cserializer').with_suffix(target_ext_suffix)
 
@@ -50,7 +57,7 @@ def _cleanup():
 
 
 def _get_cpp_flags():
-    yield from get_py_cpp_flags()
+    yield from get_py_cpp_flags(py_limited_api)
     yield f"-I{deps_dir / 'hat-util/src_c'}"
     yield f'-I{src_c_dir}'
     yield '-DMODULE_NAME="_cserializer"'
@@ -64,7 +71,7 @@ def _get_cc_flags():
 
 
 def _get_ld_flags():
-    yield from get_py_ld_flags()
+    yield from get_py_ld_flags(py_limited_api)
 
 
 _build = CBuild(src_paths=[src_c_dir / 'hat/sbs.c',

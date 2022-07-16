@@ -4,11 +4,13 @@ import sys
 from hat.doit import common
 from hat.doit.py import (build_wheel,
                          run_pytest,
-                         run_flake8)
+                         run_flake8,
+                         get_py_versions)
 from hat.doit.docs import (SphinxOutputType,
                            build_sphinx,
                            build_pdoc)
 
+from .cserializer import py_limited_api
 from .cserializer import *  # NOQA
 from . import cserializer
 
@@ -50,9 +52,10 @@ def task_build():
             description='Hat simple binary serializer',
             url='https://github.com/hat-open/hat-sbs',
             license=common.License.APACHE2,
-            packages=['hat'],
-            py_versions=[common.target_py_version],
-            platform=common.target_platform)
+            py_versions=get_py_versions(py_limited_api),
+            py_limited_api=py_limited_api,
+            platform=common.target_platform,
+            has_ext_modules=True)
 
     return {'actions': [build],
             'task_dep': ['cserializer']}

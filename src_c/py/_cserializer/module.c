@@ -1,4 +1,3 @@
-#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <hat/sbs.h>
 
@@ -24,6 +23,15 @@ static PyObject *decode_generic(hat_buff_t *buff, module_state_t *module_state,
 
 static inline bool is_type(PyObject *inst, PyObject *cls) {
     return Py_TYPE(inst) == (PyTypeObject *)cls;
+}
+
+
+static inline int get_legacy_char_buffer(PyObject *obj, const char **buffer,
+                                         Py_ssize_t *buffer_len) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return PyObject_AsCharBuffer(obj, buffer, buffer_len);
+#pragma GCC diagnostic pop
 }
 
 
@@ -62,11 +70,33 @@ static ssize_t encode_float(hat_buff_t *buff, PyObject *value) {
 
 
 static ssize_t encode_string(hat_buff_t *buff, PyObject *value) {
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API >= 0x030A0000
+
     Py_ssize_t v_len;
     const char *v = PyUnicode_AsUTF8AndSize(value, &v_len);
     if (!v)
         return -1;
+
     return hat_sbs_encode_string(buff, (uint8_t *)v, v_len);
+
+#else
+
+    PyObject *v_bytes = PyUnicode_AsUTF8String(value);
+    if (!v_bytes)
+        return -1;
+
+    const char *v;
+    Py_ssize_t v_len;
+    if (get_legacy_char_buffer(v_bytes, &v, &v_len)) {
+        Py_DECREF(v_bytes);
+        return -1;
+    }
+
+    ssize_t result = hat_sbs_encode_string(buff, (uint8_t *)v, v_len);
+    Py_DECREF(v_bytes);
+    return result;
+
+#endif
 }
 
 
@@ -552,9 +582,22 @@ static PyObject *decode(PyObject *self, PyObject *args) {
     if (!PyMemoryView_Check(data))
         return NULL;
 
-    hat_buff_t buff = {.data = PyMemoryView_GET_BUFFER(data)->buf,
-                       .size = PyMemoryView_GET_BUFFER(data)->len,
-                       .pos = 0};
+    void *buff_data;
+    Py_ssize_t buff_size;
+
+#ifndef Py_LIMITED_API
+
+    buff_data = PyMemoryView_GET_BUFFER(data)->buf;
+    buff_size = PyMemoryView_GET_BUFFER(data)->len;
+
+#else
+
+    if (get_legacy_char_buffer(data, (const char **)&buff_data, &buff_size))
+        return NULL;
+
+#endif
+
+    hat_buff_t buff = {.data = buff_data, .size = buff_size, .pos = 0};
 
     return decode_generic(&buff, module_state, refs, t);
 }
