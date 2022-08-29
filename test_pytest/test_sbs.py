@@ -11,16 +11,16 @@ def test_example():
     repo = sbs.Repository('''
         module Module
 
-        Entry(K, V) = Tuple {
+        Entry(K, V) = Record {
             key: K
             value: V
         }
 
-        T = Array(Maybe(Entry(String, Integer)))
+        T = Array(Optional(Entry(String, Integer)))
     ''')
     data = [
-        ('Nothing', None),
-        ('Just', {
+        ('none', None),
+        ('value', {
             'key': 'abc',
             'value': 123
         })
@@ -35,85 +35,81 @@ def test_example():
 @pytest.mark.parametrize("schema", ["""
     module Module
 
-    T1 = Boolean
-    T2 = Integer
-    T3 = Float
-    T4 = String
-    T5 = Bytes
+    T1 = None
+    T2 = Boolean
+    T3 = Integer
+    T4 = Float
+    T5 = String
+    T6 = Bytes
 
-    T6 = Array(Integer)
-    T7 = Array(Array(Boolean))
-    T8 = Tuple { x: Integer, y: String }
-    T9 = Union { x: Integer, y: String }
+    T7 = Array(Integer)
+    T8 = Array(Array(Boolean))
+    T9 = Record { x: Integer, y: String }
+    T10 = Choice { x: Integer, y: String }
 
-    T10 = Tuple {}
-    T11 = Union {}
-    T12 = None
-    T13 = Maybe(Integer)
+    T11 = Optional(Integer)
 
-    T14(x) = x
-    T15 = T14(Integer)
-    T16 = T14(String)
+    T12(x) = x
+    T13 = T12(Integer)
+    T14 = T12(String)
 
-    T17(x) = Array(x)
-    T18(y) = T17(y)
-    T19 = T18(Maybe(Integer))
+    T15(x) = Array(x)
+    T16(y) = T15(y)
+    T17 = T16(Optional(Integer))
 
-    T20 = Array(Float)
-    T21 = Array(String)
+    T18 = Array(Float)
+    T19 = Array(String)
 """])
 @pytest.mark.parametrize("t, v", [
-    ('T1', True),
-    ('T1', False),
-    ('T2', 0),
-    ('T2', 1),
-    ('T2', -1),
-    ('T2', 128),
-    ('T2', -128),
-    ('T2', 256),
-    ('T2', -256),
-    ('T2', 123456789123456),
-    ('T2', -123456789123456),
+    ('T1', None),
+    ('T2', True),
+    ('T2', False),
     ('T3', 0),
-    ('T3', -1),
     ('T3', 1),
-    ('T3', 0.5),
-    ('T3', -0.5),
-    ('T3', 123.456),
-    ('T3', -123.456),
-    ('T3', 1e25),
-    ('T3', -1e25),
-    ('T4', ''),
-    ('T4', '0'),
-    ('T4', 'abcdefg'),
-    ('T4', ' \n\'\"\\'),
-    ('T5', b''),
-    ('T5', b'0'),
-    ('T5', b'abcdefg'),
-    ('T5', b' \n\'\"\\'),
-    ('T6', []),
-    ('T6', [1]),
-    ('T6', [1, 2, 3, 4, 5]),
-    ('T6', list(range(100))),
+    ('T3', -1),
+    ('T3', 128),
+    ('T3', -128),
+    ('T3', 256),
+    ('T3', -256),
+    ('T3', 123456789123456),
+    ('T3', -123456789123456),
+    ('T4', 0),
+    ('T4', -1),
+    ('T4', 1),
+    ('T4', 0.5),
+    ('T4', -0.5),
+    ('T4', 123.456),
+    ('T4', -123.456),
+    ('T4', 1e25),
+    ('T4', -1e25),
+    ('T5', ''),
+    ('T5', '0'),
+    ('T5', 'abcdefg'),
+    ('T5', ' \n\'\"\\'),
+    ('T6', b''),
+    ('T6', b'0'),
+    ('T6', b'abcdefg'),
+    ('T6', b' \n\'\"\\'),
     ('T7', []),
-    ('T7', [[]]),
-    ('T7', [[], [], []]),
-    ('T7', [[True]]),
-    ('T7', [[], [False]]),
-    ('T7', [[True], [False], [True, False]]),
-    ('T8', {'x': 1, 'y': '1'}),
-    ('T9', ('x', 1)),
-    ('T9', ('y', '1')),
-    ('T10', None),
-    ('T11', None),
-    ('T12', None),
-    ('T13', ('Nothing', None)),
-    ('T13', ('Just', 1234)),
-    ('T15', 1234),
-    ('T16', 'abcd'),
-    ('T19', [('Nothing', None), ('Just', 1234)]),
-    ('T20', [0, 1.5, -1, 0.005, 1000.1]),
-    ('T21', ['', '', '']),
+    ('T7', [1]),
+    ('T7', [1, 2, 3, 4, 5]),
+    ('T7', list(range(100))),
+    ('T8', []),
+    ('T8', [[]]),
+    ('T8', [[], [], []]),
+    ('T8', [[True]]),
+    ('T8', [[], [False]]),
+    ('T8', [[True], [False], [True, False]]),
+    ('T9', {'x': 1, 'y': '1'}),
+    ('T10', ('x', 1)),
+    ('T10', ('y', '1')),
+    ('T11', ('none', None)),
+    ('T11', ('value', 1234)),
+    ('T13', 1234),
+    ('T14', 'abcd'),
+    ('T17', [('none', None), ('value', 1234)]),
+    ('T18', [0, 1.5, -1, 0.005, 1000.1]),
+    ('T19', ['', '', '']),
 ])
 def test_serialization(encode_serializer, decode_serializer, schema, t, v):
     encode_repo = sbs.Repository(schema, serializer=encode_serializer)
@@ -176,7 +172,7 @@ def test_multiple_modules(serializer):
 @pytest.mark.parametrize("schema", ["""
     module Module
 
-    T1 = Union { a: Integer }
+    T1 = Choice { a: Integer }
 """])
 @pytest.mark.parametrize("t,v", [
     ('T1', ('b', 1))

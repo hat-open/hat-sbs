@@ -4,14 +4,15 @@
 
 typedef struct {
     PyObject *common_Ref;
+    PyObject *common_NoneType;
     PyObject *common_BooleanType;
     PyObject *common_IntegerType;
     PyObject *common_FloatType;
     PyObject *common_StringType;
     PyObject *common_BytesType;
     PyObject *common_ArrayType;
-    PyObject *common_TupleType;
-    PyObject *common_UnionType;
+    PyObject *common_RecordType;
+    PyObject *common_ChoiceType;
 } module_state_t;
 
 
@@ -44,6 +45,11 @@ static PyObject *resolve_ref(module_state_t *module_state, PyObject *refs,
         Py_DECREF(t);
     }
     return t;
+}
+
+
+static ssize_t encode_none() {
+    return 0;
 }
 
 
@@ -153,8 +159,8 @@ static ssize_t encode_array(hat_buff_t *buff, module_state_t *module_state,
 }
 
 
-static ssize_t encode_tuple(hat_buff_t *buff, module_state_t *module_state,
-                            PyObject *refs, PyObject *t, PyObject *value) {
+static ssize_t encode_record(hat_buff_t *buff, module_state_t *module_state,
+                             PyObject *refs, PyObject *t, PyObject *value) {
     size_t init_buff_pos = (buff ? buff->pos : 0);
 
     PyObject *t_entries = PyObject_GetAttrString(t, "entries");
@@ -212,8 +218,8 @@ static ssize_t encode_tuple(hat_buff_t *buff, module_state_t *module_state,
 }
 
 
-static ssize_t encode_union(hat_buff_t *buff, module_state_t *module_state,
-                            PyObject *refs, PyObject *t, PyObject *value) {
+static ssize_t encode_choice(hat_buff_t *buff, module_state_t *module_state,
+                             PyObject *refs, PyObject *t, PyObject *value) {
     PyObject *t_entries = PyObject_GetAttrString(t, "entries");
     if (!t_entries)
         return -1;
@@ -261,7 +267,7 @@ static ssize_t encode_union(hat_buff_t *buff, module_state_t *module_state,
 
     size_t init_buff_pos = (buff ? buff->pos : 0);
 
-    size_t result = hat_sbs_encode_union_header(buff, id);
+    size_t result = hat_sbs_encode_choice_header(buff, id);
 
     hat_buff_t *entry_buff = (result ? NULL : buff);
     ssize_t entry_result =
@@ -279,6 +285,12 @@ static ssize_t encode_union(hat_buff_t *buff, module_state_t *module_state,
     }
 
     return result;
+}
+
+
+static PyObject *decode_none() {
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 
@@ -350,8 +362,8 @@ static PyObject *decode_array(hat_buff_t *buff, module_state_t *module_state,
 }
 
 
-static PyObject *decode_tuple(hat_buff_t *buff, module_state_t *module_state,
-                              PyObject *refs, PyObject *t) {
+static PyObject *decode_record(hat_buff_t *buff, module_state_t *module_state,
+                               PyObject *refs, PyObject *t) {
     PyObject *t_entries = PyObject_GetAttrString(t, "entries");
     if (!t_entries)
         return NULL;
@@ -397,8 +409,8 @@ static PyObject *decode_tuple(hat_buff_t *buff, module_state_t *module_state,
 }
 
 
-static PyObject *decode_union(hat_buff_t *buff, module_state_t *module_state,
-                              PyObject *refs, PyObject *t) {
+static PyObject *decode_choice(hat_buff_t *buff, module_state_t *module_state,
+                               PyObject *refs, PyObject *t) {
     PyObject *t_entries = PyObject_GetAttrString(t, "entries");
     if (!t_entries)
         return NULL;
@@ -414,7 +426,7 @@ static PyObject *decode_union(hat_buff_t *buff, module_state_t *module_state,
     }
 
     size_t id;
-    if (hat_sbs_decode_union_header(buff, &id))
+    if (hat_sbs_decode_choice_header(buff, &id))
         return NULL;
 
     PyObject *entry_name_type = PyList_GetItem(t_entries, id);
@@ -463,6 +475,9 @@ static ssize_t encode_generic(hat_buff_t *buff, module_state_t *module_state,
     if (!t)
         return -1;
 
+    if (is_type(t, module_state->common_NoneType))
+        return encode_none();
+
     if (is_type(t, module_state->common_BooleanType))
         return encode_boolean(buff, value);
 
@@ -481,11 +496,11 @@ static ssize_t encode_generic(hat_buff_t *buff, module_state_t *module_state,
     if (is_type(t, module_state->common_ArrayType))
         return encode_array(buff, module_state, refs, t, value);
 
-    if (is_type(t, module_state->common_TupleType))
-        return encode_tuple(buff, module_state, refs, t, value);
+    if (is_type(t, module_state->common_RecordType))
+        return encode_record(buff, module_state, refs, t, value);
 
-    if (is_type(t, module_state->common_UnionType))
-        return encode_union(buff, module_state, refs, t, value);
+    if (is_type(t, module_state->common_ChoiceType))
+        return encode_choice(buff, module_state, refs, t, value);
 
     PyErr_SetNone(PyExc_ValueError);
     return -1;
@@ -499,6 +514,9 @@ static PyObject *decode_generic(hat_buff_t *buff, module_state_t *module_state,
     t = resolve_ref(module_state, refs, t);
     if (!t)
         return NULL;
+
+    if (is_type(t, module_state->common_NoneType))
+        return decode_none();
 
     if (is_type(t, module_state->common_BooleanType))
         return decode_boolean(buff);
@@ -518,11 +536,11 @@ static PyObject *decode_generic(hat_buff_t *buff, module_state_t *module_state,
     if (is_type(t, module_state->common_ArrayType))
         return decode_array(buff, module_state, refs, t);
 
-    if (is_type(t, module_state->common_TupleType))
-        return decode_tuple(buff, module_state, refs, t);
+    if (is_type(t, module_state->common_RecordType))
+        return decode_record(buff, module_state, refs, t);
 
-    if (is_type(t, module_state->common_UnionType))
-        return decode_union(buff, module_state, refs, t);
+    if (is_type(t, module_state->common_ChoiceType))
+        return decode_choice(buff, module_state, refs, t);
 
     PyErr_SetNone(PyExc_ValueError);
     return NULL;
@@ -608,14 +626,15 @@ static int module_clear(PyObject *self) {
         return 0;
     module_state_t *module_state = PyModule_GetState(self);
     Py_CLEAR(module_state->common_Ref);
+    Py_CLEAR(module_state->common_NoneType);
     Py_CLEAR(module_state->common_BooleanType);
     Py_CLEAR(module_state->common_IntegerType);
     Py_CLEAR(module_state->common_FloatType);
     Py_CLEAR(module_state->common_StringType);
     Py_CLEAR(module_state->common_BytesType);
     Py_CLEAR(module_state->common_ArrayType);
-    Py_CLEAR(module_state->common_TupleType);
-    Py_CLEAR(module_state->common_UnionType);
+    Py_CLEAR(module_state->common_RecordType);
+    Py_CLEAR(module_state->common_ChoiceType);
     return 0;
 }
 
@@ -643,14 +662,15 @@ PyMODINIT_FUNC PyInit__cserializer() {
 
     module_state_t *module_state = PyModule_GetState(module);
     module_state->common_Ref = NULL;
+    module_state->common_NoneType = NULL;
     module_state->common_BooleanType = NULL;
     module_state->common_IntegerType = NULL;
     module_state->common_FloatType = NULL;
     module_state->common_StringType = NULL;
     module_state->common_BytesType = NULL;
     module_state->common_ArrayType = NULL;
-    module_state->common_TupleType = NULL;
-    module_state->common_UnionType = NULL;
+    module_state->common_RecordType = NULL;
+    module_state->common_ChoiceType = NULL;
 
     PyObject *common = PyImport_ImportModule("hat.sbs.common");
     if (!common)
@@ -662,6 +682,11 @@ PyMODINIT_FUNC PyInit__cserializer() {
 
     module_state->common_Ref = PyMapping_GetItemString(common_dict, "Ref");
     if (!module_state->common_Ref)
+        goto cleanup;
+
+    module_state->common_NoneType =
+        PyMapping_GetItemString(common_dict, "NoneType");
+    if (!module_state->common_NoneType)
         goto cleanup;
 
     module_state->common_BooleanType =
@@ -694,14 +719,14 @@ PyMODINIT_FUNC PyInit__cserializer() {
     if (!module_state->common_ArrayType)
         goto cleanup;
 
-    module_state->common_TupleType =
-        PyMapping_GetItemString(common_dict, "TupleType");
-    if (!module_state->common_TupleType)
+    module_state->common_RecordType =
+        PyMapping_GetItemString(common_dict, "RecordType");
+    if (!module_state->common_RecordType)
         goto cleanup;
 
-    module_state->common_UnionType =
-        PyMapping_GetItemString(common_dict, "UnionType");
-    if (!module_state->common_UnionType)
+    module_state->common_ChoiceType =
+        PyMapping_GetItemString(common_dict, "ChoiceType");
+    if (!module_state->common_ChoiceType)
         goto cleanup;
 
 cleanup:
@@ -710,14 +735,15 @@ cleanup:
 
     if (PyErr_Occurred()) {
         Py_XDECREF(module_state->common_Ref);
+        Py_XDECREF(module_state->common_NoneType);
         Py_XDECREF(module_state->common_BooleanType);
         Py_XDECREF(module_state->common_IntegerType);
         Py_XDECREF(module_state->common_FloatType);
         Py_XDECREF(module_state->common_StringType);
         Py_XDECREF(module_state->common_BytesType);
         Py_XDECREF(module_state->common_ArrayType);
-        Py_XDECREF(module_state->common_TupleType);
-        Py_XDECREF(module_state->common_UnionType);
+        Py_XDECREF(module_state->common_RecordType);
+        Py_XDECREF(module_state->common_ChoiceType);
         Py_CLEAR(module);
     }
 

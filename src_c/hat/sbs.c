@@ -81,7 +81,7 @@ size_t hat_sbs_encode_array_header(hat_buff_t *buff, size_t len) {
 }
 
 
-size_t hat_sbs_encode_union_header(hat_buff_t *buff, size_t id) {
+size_t hat_sbs_encode_choice_header(hat_buff_t *buff, size_t id) {
     return hat_sbs_encode_integer(buff, id);
 }
 
@@ -153,7 +153,7 @@ int hat_sbs_decode_array_header(hat_buff_t *buff, size_t *len) {
 }
 
 
-int hat_sbs_decode_union_header(hat_buff_t *buff, size_t *id) {
+int hat_sbs_decode_choice_header(hat_buff_t *buff, size_t *id) {
     int64_t temp_id;
     if (hat_sbs_decode_integer(buff, &temp_id))
         return HAT_SBS_ERROR;

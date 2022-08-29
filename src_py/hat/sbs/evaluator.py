@@ -59,11 +59,11 @@ def _resolve_type(modules_dict, module, ast_type, mappings):
             raise Exception('Array requires one argument')
         return common.ArrayType(args[0])
 
-    if ref == common.Ref(None, 'Tuple'):
-        return common.TupleType(entries)
+    if ref == common.Ref(None, 'Record'):
+        return common.RecordType(entries)
 
-    if ref == common.Ref(None, 'Union'):
-        return common.UnionType(entries)
+    if ref == common.Ref(None, 'Choice'):
+        return common.ChoiceType(entries)
 
     if not ref.module:
         ref = ref._replace(module=module)
@@ -74,31 +74,31 @@ def _resolve_type(modules_dict, module, ast_type, mappings):
     return _resolve_ref(modules_dict, ref, args)
 
 
-_builtin_refs = {common.Ref(None, 'Boolean'): common.BooleanType(),
+_builtin_refs = {common.Ref(None, 'None'): common.NoneType(),
+                 common.Ref(None, 'Boolean'): common.BooleanType(),
                  common.Ref(None, 'Integer'): common.IntegerType(),
                  common.Ref(None, 'Float'): common.FloatType(),
                  common.Ref(None, 'String'): common.StringType(),
-                 common.Ref(None, 'Bytes'): common.BytesType(),
-                 common.Ref(None, 'None'): common.TupleType([])}
+                 common.Ref(None, 'Bytes'): common.BytesType()}
 
 
 _builtin_arg_refs = {
-    common.Ref(None, 'Maybe'): parser.AstTypeDef(
-        name='Maybe',
+    common.Ref(None, 'Optional'): parser.AstTypeDef(
+        name='Optional',
         args=['a'],
         type=parser.AstType(
             module=None,
-            name='Union',
+            name='Choice',
             entries=[
                 parser.AstEntry(
-                    name='Nothing',
+                    name='none',
                     type=parser.AstType(
                         module=None,
-                        name='Tuple',
+                        name='None',
                         entries=[],
                         args=[])),
                 parser.AstEntry(
-                    name='Just',
+                    name='value',
                     type=parser.AstType(
                         module=None,
                         name='a',

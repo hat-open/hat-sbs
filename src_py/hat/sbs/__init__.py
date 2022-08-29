@@ -6,6 +6,8 @@ Python types according to following translation table:
     +----------+------------------+
     | SBS type | Python type      |
     +==========+==================+
+    | None     | NoneType         |
+    +----------+------------------+
     | Boolean  | bool             |
     +----------+------------------+
     | Integer  | int              |
@@ -18,12 +20,10 @@ Python types according to following translation table:
     +----------+------------------+
     | Array    | List[Data]       |
     +----------+------------------+
-    | Tuple    | Dict[str, Data]  |
+    | Record   | Dict[str, Data]  |
     +----------+------------------+
-    | Union    | Tuple[str, Data] |
+    | Choice   | Tuple[str, Data] |
     +----------+------------------+
-
-SBS Tuple and Union types without elements are translated to ``None``.
 
 Example usage of SBS serializer::
 
@@ -32,16 +32,16 @@ Example usage of SBS serializer::
     repo = hat.sbs.Repository('''
         module Module
 
-        Entry(K, V) = Tuple {
+        Entry(K, V) = Record {
             key: K
             value: V
         }
 
-        T = Array(Maybe(Entry(String, Integer)))
+        T = Array(Optional(Entry(String, Integer)))
     ''')
     data = [
-        ('Nothing', None),
-        ('Just', {
+        ('none', None),
+        ('value', {
             'key': 'abc',
             'value': 123
         })

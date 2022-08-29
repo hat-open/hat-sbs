@@ -1,5 +1,4 @@
 import collections
-import itertools
 import struct
 import typing
 
@@ -10,7 +9,7 @@ def encode(refs: typing.Dict[common.Ref, common.Type],
            t: common.Type,
            value: common.Data
            ) -> bytes:
-    return _encode_generic(refs, t, value)
+    return bytes(_encode_generic(refs, t, value))
 
 
 def decode(refs: typing.Dict[common.Ref, common.Type],
@@ -24,49 +23,82 @@ def decode(refs: typing.Dict[common.Ref, common.Type],
 def _encode_generic(refs, t, value):
     while isinstance(t, common.Ref) and t in refs:
         t = refs[t]
-    if isinstance(t, common.BooleanType):
-        return _encode_Boolean(value)
-    if isinstance(t, common.IntegerType):
-        return _encode_Integer(value)
-    if isinstance(t, common.FloatType):
-        return _encode_Float(value)
-    if isinstance(t, common.StringType):
-        return _encode_String(value)
-    if isinstance(t, common.BytesType):
-        return _encode_Bytes(value)
-    if isinstance(t, common.ArrayType):
-        return _encode_Array(refs, t, value)
-    if isinstance(t, common.TupleType):
-        return _encode_Tuple(refs, t, value)
-    if isinstance(t, common.UnionType):
-        return _encode_Union(refs, t, value)
-    raise ValueError()
+
+    if isinstance(t, common.NoneType):
+        yield from _encode_None(value)
+
+    elif isinstance(t, common.BooleanType):
+        yield from _encode_Boolean(value)
+
+    elif isinstance(t, common.IntegerType):
+        yield from _encode_Integer(value)
+
+    elif isinstance(t, common.FloatType):
+        yield from _encode_Float(value)
+
+    elif isinstance(t, common.StringType):
+        yield from _encode_String(value)
+
+    elif isinstance(t, common.BytesType):
+        yield from _encode_Bytes(value)
+
+    elif isinstance(t, common.ArrayType):
+        yield from _encode_Array(refs, t, value)
+
+    elif isinstance(t, common.RecordType):
+        yield from _encode_Record(refs, t, value)
+
+    elif isinstance(t, common.ChoiceType):
+        yield from _encode_Choice(refs, t, value)
+
+    else:
+        raise ValueError()
 
 
 def _decode_generic(refs, t, data):
     while isinstance(t, common.Ref) and t in refs:
         t = refs[t]
+
+    if isinstance(t, common.NoneType):
+        return _decode_None(data)
+
     if isinstance(t, common.BooleanType):
         return _decode_Boolean(data)
+
     if isinstance(t, common.IntegerType):
         return _decode_Integer(data)
+
     if isinstance(t, common.FloatType):
         return _decode_Float(data)
+
     if isinstance(t, common.StringType):
         return _decode_String(data)
+
     if isinstance(t, common.BytesType):
         return _decode_Bytes(data)
+
     if isinstance(t, common.ArrayType):
         return _decode_Array(refs, t, data)
-    if isinstance(t, common.TupleType):
-        return _decode_Tuple(refs, t, data)
-    if isinstance(t, common.UnionType):
-        return _decode_Union(refs, t, data)
+
+    if isinstance(t, common.RecordType):
+        return _decode_Record(refs, t, data)
+
+    if isinstance(t, common.ChoiceType):
+        return _decode_Choice(refs, t, data)
+
     raise ValueError()
 
 
+def _encode_None(value):
+    yield from b''
+
+
+def _decode_None(data):
+    return None, data
+
+
 def _encode_Boolean(value):
-    return b'\x01' if value else b'\x00'
+    yield 1 if value else 0
 
 
 def _decode_Boolean(data):
@@ -85,7 +117,7 @@ def _encode_Integer(value):
             break
         if value == -1 and (temp & 0x40):
             break
-    return bytes(ret)
+    yield from ret
 
 
 def _decode_Integer(data):
@@ -98,7 +130,7 @@ def _decode_Integer(data):
 
 
 def _encode_Float(value):
-    return struct.pack('>d', value)
+    yield from struct.pack('>d', value)
 
 
 def _decode_Float(data):
@@ -107,7 +139,8 @@ def _decode_Float(data):
 
 def _encode_String(value):
     ret = value.encode('utf-8')
-    return _encode_Integer(len(ret)) + ret
+    yield from _encode_Integer(len(ret))
+    yield from ret
 
 
 def _decode_String(data):
@@ -116,7 +149,8 @@ def _decode_String(data):
 
 
 def _encode_Bytes(value):
-    return _encode_Integer(len(value)) + value
+    yield from _encode_Integer(len(value))
+    yield from value
 
 
 def _decode_Bytes(data):
@@ -125,54 +159,59 @@ def _decode_Bytes(data):
 
 
 def _encode_Array(refs, t, value):
-    return bytes(itertools.chain(
-        _encode_Integer(len(value)),
-        itertools.chain.from_iterable(
-            _encode_generic(refs, t.t, i) for i in value)))
+    yield from _encode_Integer(len(value))
+
+    for i in value:
+        yield from _encode_generic(refs, t.t, i)
 
 
 def _decode_Array(refs, t, data):
     count, data = _decode_Integer(data)
+
     ret = collections.deque()
     for _ in range(count):
         i, data = _decode_generic(refs, t.t, data)
         ret.append(i)
+
     return list(ret), data
 
 
-def _encode_Tuple(refs, t, value):
+def _encode_Record(refs, t, value):
     if not t.entries:
-        return b''
-    return bytes(itertools.chain.from_iterable(
-        _encode_generic(refs, entry_type, value[entry_name])
-        for entry_name, entry_type in t.entries))
+        raise ValueError('empty entries')
+
+    for entry_name, entry_type in t.entries:
+        yield from _encode_generic(refs, entry_type, value[entry_name])
 
 
-def _decode_Tuple(refs, t, data):
+def _decode_Record(refs, t, data):
     if not t.entries:
-        return None, data
+        raise ValueError('empty entries')
+
     ret = {}
     for entry_name, entry_type in t.entries:
         ret[entry_name], data = _decode_generic(refs, entry_type, data)
     return ret, data
 
 
-def _encode_Union(refs, t, value):
+def _encode_Choice(refs, t, value):
     if not t.entries:
-        return b''
+        raise ValueError('empty entries')
+
     for i, (entry_name, entry_type) in enumerate(t.entries):
         if entry_name == value[0]:
             break
     else:
-        raise Exception()
-    return bytes(itertools.chain(
-        _encode_Integer(i),
-        _encode_generic(refs, entry_type, value[1])))
+        raise Exception('invalid entry name')
+
+    yield from _encode_Integer(i)
+    yield from _encode_generic(refs, entry_type, value[1])
 
 
-def _decode_Union(refs, t, data):
+def _decode_Choice(refs, t, data):
     if not t.entries:
-        return None, data
+        raise ValueError('empty entries')
+
     i, data = _decode_Integer(data)
     entry_name, entry_type = t.entries[i]
     value, data = _decode_generic(refs, entry_type, data)

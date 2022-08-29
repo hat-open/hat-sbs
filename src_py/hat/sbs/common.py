@@ -8,6 +8,10 @@ class Ref(typing.NamedTuple):
     name: str
 
 
+class NoneType(typing.NamedTuple):
+    pass
+
+
 class BooleanType(typing.NamedTuple):
     pass
 
@@ -32,27 +36,30 @@ class ArrayType(typing.NamedTuple):
     t: 'Type'
 
 
-class TupleType(typing.NamedTuple):
+class RecordType(typing.NamedTuple):
     entries: typing.List[typing.Tuple[str, 'Type']]
 
 
-class UnionType(typing.NamedTuple):
+class ChoiceType(typing.NamedTuple):
     entries: typing.List[typing.Tuple[str, 'Type']]
 
 
 Type = typing.Union[Ref,
+                    NoneType,
                     BooleanType,
                     IntegerType,
                     FloatType,
                     StringType,
                     BytesType,
                     ArrayType,
-                    TupleType,
-                    UnionType]
-util.register_type_alias('Type')
+                    RecordType,
+                    ChoiceType]
 
-Data = typing.Union[bool, int, float, str, bytes,
+Data = typing.Union[None, bool, int, float, str, bytes,
                     typing.List['Data'],
                     typing.Dict[str, 'Data'],
                     typing.Tuple[str, 'Data']]
+
+# HACK
+util.register_type_alias('Type')
 util.register_type_alias('Data')

@@ -18,12 +18,12 @@ Example of SBS schema::
 
     module Module
 
-    Entry(K, V) = Tuple {
+    Entry(K, V) = Record {
         key: K
         value: V
     }
 
-    Collection(K) = Union {
+    Collection(K) = Choice {
         null: None
         bool: Entry(K, Boolean)
         int: Entry(K, Integer)
@@ -85,6 +85,10 @@ Builtin data types include:
 
     * simple data types
 
+        * ``None``
+
+            Data type without value.
+
         * ``Boolean``
 
             Data type with two possible values representing true and false.
@@ -113,28 +117,28 @@ Builtin data types include:
             Parametric data type that defines arbitrary length Array where all
             elements are of type defined by ``<t>``.
 
-        * ``Tuple { <entry1>: <t1>, <entry2>: <t2>, ... }``
+        * ``Record { <entry1>: <t1>, <entry2>: <t2>, ... }``
 
             Collection of user-defined entries where each entry has entry
             identifier (``<entry1>``, ``<entry2>``, ...) and entry type
             (``<t1>``, ``<t2>``, ...). Encoded data must contain all entries
-            specified by type definition.
+            specified by type definition. Number of entries should be greather
+            than zero.
 
-        * ``Union { <entry1>: <t1>, <entry2>: <t2>, ... }``
+        * ``Choice { <entry1>: <t1>, <entry2>: <t2>, ... }``
 
             Type that can represent one of types defined by ``<t1>``, ``<t2>``,
             ... Encoded data must contain only single entry identified by
-            entry identifier (``<entry1>``, ``<entry2>``, ...).
+            entry identifier (``<entry1>``, ``<entry2>``, ...). Choice
+            definition should contain at least one entry definition.
 
     * derived data types
 
         These include predefined types that can be expressed as::
 
-            None = Tuple {}
-
-            Maybe(a) = Union {
-                Nothing: None
-                Just: a
+            Optional(a) = Choice {
+                none: None
+                value: a
             }
 
 
@@ -149,17 +153,18 @@ PEG grammar
 
     Type            <- TSimple
                      / TArray
-                     / TTuple
-                     / TUnion
+                     / TRecord
+                     / TChoice
                      / TIdentifier
-    TSimple         <- 'Boolean'
+    TSimple         <- 'None'
+                     / 'Boolean'
                      / 'Integer'
                      / 'Float'
                      / 'String'
                      / 'Bytes'
     TArray          <- 'Array' OWS '(' OWS Type OWS ')'
-    TTuple          <- 'Tuple' OWS '{' OWS Entries? OWS '}'
-    TUnion          <- 'Union' OWS '{' OWS Entries? OWS '}'
+    TRecord         <- 'Record' OWS '{' OWS Entries OWS '}'
+    TChoice         <- 'Choice' OWS '{' OWS Entries OWS '}'
     TIdentifier     <- Identifier ('.' Identifier)? (OWS ArgTypes)?
 
     Entries         <- Entry (MWS Entry)*
@@ -185,6 +190,12 @@ PEG grammar
 
 Data encoding
 -------------
+
+None
+''''
+
+None value is represented with empty byte array.
+
 
 Boolean
 '''''''
@@ -239,15 +250,15 @@ concatenated bytes are prefixed with array's element count encoded as
 ``Integer``.
 
 
-Tuple
-'''''
+Record
+''''''
 
-Tuple is encoded as sequential concatenation of tuple's elements encoding
+Record is encoded as sequential concatenation of record's elements encoding
 according to elements order defined by schema.
 
 
-Union
-'''''
+Choice
+''''''
 
-Union encodes single element prefixed with encoded element's zero-based index
+Choice encodes single element prefixed with encoded element's zero-based index
 as ``Integer``.

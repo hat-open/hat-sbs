@@ -76,17 +76,18 @@ _grammar = hat.peg.Grammar(r'''
 
     Type            <- TSimple
                      / TArray
-                     / TTuple
-                     / TUnion
+                     / TRecord
+                     / TChoice
                      / TIdentifier
-    TSimple         <- 'Boolean'
+    TSimple         <- 'None'
+                     / 'Boolean'
                      / 'Integer'
                      / 'Float'
                      / 'String'
                      / 'Bytes'
     TArray          <- 'Array' OWS '(' OWS Type OWS ')'
-    TTuple          <- 'Tuple' OWS '{' OWS Entries? OWS '}'
-    TUnion          <- 'Union' OWS '{' OWS Entries? OWS '}'
+    TRecord         <- 'Record' OWS '{' OWS Entries OWS '}'
+    TChoice         <- 'Choice' OWS '{' OWS Entries OWS '}'
     TIdentifier     <- Identifier ('.' Identifier)? (OWS ArgTypes)?
 
     Entries         <- Entry (MWS Entry)*
@@ -128,14 +129,14 @@ _actions = {
                                    name='Array',
                                    entries=[],
                                    args=[c[4]]),
-    'TTuple': lambda n, c: AstType(module=None,
-                                   name='Tuple',
-                                   entries=c[4] or [],
-                                   args=[]),
-    'TUnion': lambda n, c: AstType(module=None,
-                                   name='Union',
-                                   entries=c[4] or [],
-                                   args=[]),
+    'TRecord': lambda n, c: AstType(module=None,
+                                    name='Record',
+                                    entries=c[4] or [],
+                                    args=[]),
+    'TChoice': lambda n, c: AstType(module=None,
+                                    name='Choice',
+                                    entries=c[4] or [],
+                                    args=[]),
     'TIdentifier': lambda n, c: AstType(module=(c[0]
                                                 if len(c) > 1 and c[1] == '.'
                                                 else None),

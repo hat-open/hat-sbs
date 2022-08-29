@@ -16,6 +16,8 @@ translation table:
     +----------+------------------+
     | SBS type | Python type      |
     +==========+==================+
+    | None     | NoneType         |
+    +----------+------------------+
     | Boolean  | bool             |
     +----------+------------------+
     | Integer  | int              |
@@ -28,16 +30,14 @@ translation table:
     +----------+------------------+
     | Array    | List[Data]       |
     +----------+------------------+
-    | Tuple    | Dict[str, Data]  |
+    | Record   | Dict[str, Data]  |
     +----------+------------------+
-    | Union    | Tuple[str, Data] |
+    | Choice   | Tuple[str, Data] |
     +----------+------------------+
-
-SBS Tuple and Union types without elements are translated to ``None``.
 
 `hat.sbs` provides data type definition as::
 
-    Data = typing.Union[bool, int, float, str, bytes,
+    Data = typing.Union[None, bool, int, float, str, bytes,
                         typing.List['Data'],
                         typing.Dict[str, 'Data'],
                         typing.Tuple[str, 'Data']]
@@ -101,16 +101,16 @@ Example usage::
     repo = hat.sbs.Repository('''
         module Module
 
-        Entry(K, V) = Tuple {
+        Entry(K, V) = Record {
             key: K
             value: V
         }
 
-        T = Array(Maybe(Entry(String, Integer)))
+        T = Array(Optional(Entry(String, Integer)))
     ''')
     data = [
-        ('Nothing', None),
-        ('Just', {
+        ('none', None),
+        ('value', {
             'key': 'abc',
             'value': 123
         })
