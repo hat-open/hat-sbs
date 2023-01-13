@@ -1,0 +1,8 @@
+FROM python:3.9-alpine as alpine-3.9
+RUN apk update && \
+    apk add build-base git
+
+FROM alpine-3.9
+WORKDIR /hat
+VOLUME /hat/dist
+COPY . .

@@ -1,9 +1,10 @@
 from pathlib import Path
 
 from hat.doit import common
-from hat.doit.c import (get_target_ext_suffix,
-                        get_py_cpp_flags,
+from hat.doit.c import (get_py_ext_suffix,
+                        get_py_c_flags,
                         get_py_ld_flags,
+                        get_py_ld_libs,
                         CBuild)
 
 
@@ -24,9 +25,9 @@ src_c_dir = Path('src_c')
 src_py_dir = Path('src_py')
 
 
-target_ext_suffix = get_target_ext_suffix(py_limited_api)
+py_ext_suffix = get_py_ext_suffix(py_limited_api=py_limited_api)
 cserializer_path = (src_py_dir /
-                    'hat/sbs/_cserializer').with_suffix(target_ext_suffix)
+                    'hat/sbs/_cserializer').with_suffix(py_ext_suffix)
 
 
 def task_cserializer():
@@ -56,14 +57,11 @@ def _cleanup():
         common.rm_rf(path)
 
 
-def _get_cpp_flags():
-    yield from get_py_cpp_flags(py_limited_api)
+def _get_c_flags():
+    yield from get_py_c_flags(py_limited_api=py_limited_api)
     yield f"-I{deps_dir / 'hat-util/src_c'}"
     yield f'-I{src_c_dir}'
     yield '-DMODULE_NAME="_cserializer"'
-
-
-def _get_cc_flags():
     yield '-fPIC'
     yield '-O2'
     # yield '-O0'
@@ -71,7 +69,11 @@ def _get_cc_flags():
 
 
 def _get_ld_flags():
-    yield from get_py_ld_flags(py_limited_api)
+    yield from get_py_ld_flags(py_limited_api=py_limited_api)
+
+
+def _get_ld_libs():
+    yield from get_py_ld_libs(py_limited_api=py_limited_api)
 
 
 _build = CBuild(src_paths=[src_c_dir / 'hat/sbs.c',
@@ -79,8 +81,8 @@ _build = CBuild(src_paths=[src_c_dir / 'hat/sbs.c',
                 build_dir=(build_dir / 'cserializer' /
                            f'{common.target_platform.name.lower()}_'
                            f'{common.target_py_version.name.lower()}'),
-                cpp_flags=list(_get_cpp_flags()),
-                cc_flags=list(_get_cc_flags()),
+                c_flags=list(_get_c_flags()),
                 ld_flags=list(_get_ld_flags()),
+                ld_libs=list(_get_ld_libs()),
                 task_dep=['deps',
                           'cserializer_cleanup'])
