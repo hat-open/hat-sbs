@@ -5,4 +5,5 @@ RUN apk update && \
 FROM alpine-3.8
 WORKDIR /hat
 VOLUME /hat/dist
+VOLUME /root/.cache/pip
 COPY . .

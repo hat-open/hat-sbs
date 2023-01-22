@@ -16,4 +16,5 @@ RUN wget https://www.python.org/ftp/python/3.10.9/Python-3.10.9.tgz && \
 FROM debian-3.10
 WORKDIR /hat
 VOLUME /hat/dist
+VOLUME /root/.cache/pip
 COPY . .

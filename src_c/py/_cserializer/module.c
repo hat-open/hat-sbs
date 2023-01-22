@@ -27,11 +27,11 @@ static inline bool is_type(PyObject *inst, PyObject *cls) {
 }
 
 
-static inline int get_legacy_char_buffer(PyObject *obj, const char **buffer,
-                                         Py_ssize_t *buffer_len) {
+static inline int get_legacy_buffer(PyObject *obj, const void **buffer,
+                                    Py_ssize_t *buffer_len) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return PyObject_AsCharBuffer(obj, buffer, buffer_len);
+    return PyObject_AsReadBuffer(obj, buffer, buffer_len);
 #pragma GCC diagnostic pop
 }
 
@@ -48,9 +48,7 @@ static PyObject *resolve_ref(module_state_t *module_state, PyObject *refs,
 }
 
 
-static ssize_t encode_none() {
-    return 0;
-}
+static ssize_t encode_none() { return 0; }
 
 
 static ssize_t encode_boolean(hat_buff_t *buff, PyObject *value) {
@@ -93,7 +91,7 @@ static ssize_t encode_string(hat_buff_t *buff, PyObject *value) {
 
     const char *v;
     Py_ssize_t v_len;
-    if (get_legacy_char_buffer(v_bytes, &v, &v_len)) {
+    if (get_legacy_buffer(v_bytes, &v, &v_len)) {
         Py_DECREF(v_bytes);
         return -1;
     }
@@ -111,7 +109,7 @@ static ssize_t encode_bytes(hat_buff_t *buff, PyObject *value) {
     Py_ssize_t v_len;
     if (PyBytes_AsStringAndSize(value, &v, &v_len) == -1)
         return -1;
-    return hat_sbs_encode_bytes(buff, v, v_len);
+    return hat_sbs_encode_bytes(buff, (uint8_t *)v, v_len);
 }
 
 
@@ -323,7 +321,7 @@ static PyObject *decode_string(hat_buff_t *buff) {
     size_t value_len;
     if (hat_sbs_decode_string(buff, &value, &value_len))
         return NULL;
-    return PyUnicode_DecodeUTF8(value, value_len, NULL);
+    return PyUnicode_DecodeUTF8((const char *)value, value_len, NULL);
 }
 
 
@@ -332,7 +330,7 @@ static PyObject *decode_bytes(hat_buff_t *buff) {
     size_t value_len;
     if (hat_sbs_decode_bytes(buff, &value, &value_len))
         return NULL;
-    return PyBytes_FromStringAndSize(value, value_len);
+    return PyBytes_FromStringAndSize((const char *)value, value_len);
 }
 
 
@@ -568,7 +566,7 @@ static PyObject *encode(PyObject *self, PyObject *args) {
         return NULL;
 
     hat_buff_t buff = {
-        .data = PyBytes_AsString(data), .size = data_size, .pos = 0};
+        .data = (uint8_t *)PyBytes_AsString(data), .size = data_size, .pos = 0};
 
     if (!buff.data) {
         Py_DECREF(data);
@@ -610,7 +608,7 @@ static PyObject *decode(PyObject *self, PyObject *args) {
 
 #else
 
-    if (get_legacy_char_buffer(data, (const char **)&buff_data, &buff_size))
+    if (get_legacy_buffer(data, &buff_data, &buff_size))
         return NULL;
 
 #endif
