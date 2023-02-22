@@ -1,19 +1,19 @@
-FROM debian:9 as debian
+FROM debian:9 as base
 RUN apt update -qy && \
     apt install -qy build-essential wget git \
                     libffi-dev lzma-dev libssl-dev libsqlite3-dev
 
-FROM debian as debian-3.10
-RUN wget https://www.python.org/ftp/python/3.10.9/Python-3.10.9.tgz && \
-    tar -xf Python-3.10.9.tgz && \
-    cd Python-3.10.9 && \
+FROM base as base-python
+RUN wget https://www.python.org/ftp/python/3.8.16/Python-3.8.16.tgz && \
+    tar -xf Python-3.8.16.tgz && \
+    cd Python-3.8.16 && \
     ./configure && \
     make && \
     make install && \
     cd .. && \
-    rm -rf Python-3.10.9 Python-3.10.9.tgz
+    rm -rf Python-3.8.16 Python-3.8.16.tgz
 
-FROM debian-3.10
+FROM base-python
 WORKDIR /hat
 VOLUME /hat/dist
 VOLUME /root/.cache/pip
