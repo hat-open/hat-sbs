@@ -55,7 +55,10 @@ for IMAGE in $IMAGES; do
                -v ~/.cache/pip:/root/.cache/pip \
                -i $IMAGE /bin/sh - << EOF
 set -e
-pip3 install -r requirements.pip.dev.txt
+python3 -m venv venv
+. venv/bin/activate
+pip install --upgrade pip
+pip install --upgrade -r requirements.pip.dev.txt
 doit clean_all
 doit
 cp build/py/dist/*.whl dist
