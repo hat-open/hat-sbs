@@ -2,8 +2,8 @@
 /.peru
 /build
 /compile_flags.txt
-/deps
-/src_py/hat/sbs/_cserializer.*
+/peru
+/src_py/hat/sbs/serializer/_cserializer.*
 /test_pytest/.coverage
 /test_pytest/profile
 __pycache__

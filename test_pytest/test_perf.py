@@ -25,9 +25,10 @@ def test_event_encoding_duration(duration, serializer, event_count,
         hat.event.common.event_to_sbs(
             hat.event.common.Event(
                 event_id=hat.event.common.EventId(
-                    server=0,
-                    instance=i),
-                event_type=['some', 'event', 'type', str(i)],
+                    server=1,
+                    session=1,
+                    instance=i+1),
+                event_type=('some', 'event', 'type', str(i)),
                 timestamp=hat.event.common.now(),
                 source_timestamp=None,
                 payload=hat.event.common.EventPayload(
@@ -46,11 +47,11 @@ def test_event_encoding_duration(duration, serializer, event_count,
                   f'event_count: {event_count}; '
                   f'bulk_encoding: {bulk_encoding}'):
         for i in data:
-            result = sbs_repo.encode('HatEvent', 'MsgRegisterReq', i)
+            result = sbs_repo.encode('HatEventer', 'MsgRegisterReq', i)
             results.append(result)
 
     with duration(f'{serializer.__name__} decode - '
                   f'event_count: {event_count}; '
                   f'bulk_encoding: {bulk_encoding}'):
         for i in results:
-            sbs_repo.decode('HatEvent', 'MsgRegisterReq', i)
+            sbs_repo.decode('HatEventer', 'MsgRegisterReq', i)

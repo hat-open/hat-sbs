@@ -1,23 +1,18 @@
 import collections
 import struct
-import typing
 
-from hat.sbs import common
-
-
-def encode(refs: typing.Dict[common.Ref, common.Type],
-           t: common.Type,
-           value: common.Data
-           ) -> bytes:
-    return bytes(_encode_generic(refs, t, value))
+from hat.sbs.serializer import common
 
 
-def decode(refs: typing.Dict[common.Ref, common.Type],
-           t: common.Type,
-           data: memoryview
-           ) -> common.Data:
-    data, _ = _decode_generic(refs, t, data)
-    return data
+class PySerializer(common.Serializer):
+    """Serializer implementation in Python"""
+
+    def encode(refs, t, value):
+        return bytes(_encode_generic(refs, t, value))
+
+    def decode(refs, t, data):
+        value, _ = _decode_generic(refs, t, memoryview(data))
+        return value
 
 
 def _encode_generic(refs, t, value):

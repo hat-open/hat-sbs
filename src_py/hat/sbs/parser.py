@@ -5,7 +5,7 @@ import hat.peg
 
 
 class AstType(typing.NamedTuple):
-    module: typing.Optional[str]
+    module: str | None
     name: str
     entries: typing.List['AstEntry']
     args: typing.List['AstType']
@@ -18,13 +18,13 @@ class AstEntry(typing.NamedTuple):
 
 class AstTypeDef(typing.NamedTuple):
     name: str
-    args: typing.List[str]
+    args: list[str]
     type: AstType
 
 
 class AstModule(typing.NamedTuple):
     name: str
-    type_defs: typing.Dict[str, AstTypeDef]
+    type_defs: dict[str, AstTypeDef]
 
 
 def parse(schema: str) -> AstModule:

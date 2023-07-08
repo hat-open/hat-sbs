@@ -1,3 +1,5 @@
+from .pymodules import *  # NOQA
+
 from pathlib import Path
 import sys
 
@@ -10,9 +12,7 @@ from hat.doit.py import (build_wheel,
                          run_flake8,
                          get_py_versions)
 
-from .cserializer import py_limited_api
-from .cserializer import *  # NOQA
-from . import cserializer
+from . import pymodules
 
 
 __all__ = ['task_clean_all',
@@ -20,9 +20,9 @@ __all__ = ['task_clean_all',
            'task_check',
            'task_test',
            'task_docs',
-           'task_deps',
+           'task_peru',
            'task_format',
-           *cserializer.__all__]
+           *pymodules.__all__]
 
 
 build_dir = Path('build')
@@ -38,7 +38,7 @@ def task_clean_all():
     """Clean all"""
     return {'actions': [(common.rm_rf, [
         build_dir,
-        *(src_py_dir / 'hat/sbs').glob('_cserializer.*')])]}
+        *(src_py_dir / 'hat/sbs/serializer').glob('_cserializer.*')])]}
 
 
 def task_build():
@@ -52,13 +52,13 @@ def task_build():
             description='Hat simple binary serializer',
             url='https://github.com/hat-open/hat-sbs',
             license=common.License.APACHE2,
-            py_versions=get_py_versions(py_limited_api),
-            py_limited_api=py_limited_api,
+            py_versions=get_py_versions(pymodules.py_limited_api),
+            py_limited_api=pymodules.py_limited_api,
             platform=common.target_platform,
             has_ext_modules=True)
 
     return {'actions': [build],
-            'task_dep': ['cserializer']}
+            'task_dep': ['pymodules']}
 
 
 def task_check():
@@ -71,7 +71,7 @@ def task_test():
     """Test"""
     return {'actions': [lambda args: run_pytest(pytest_dir, *(args or []))],
             'pos_arg': 'args',
-            'task_dep': ['cserializer']}
+            'task_dep': ['pymodules']}
 
 
 def task_docs():
@@ -85,11 +85,11 @@ def task_docs():
                    dst_dir=build_docs_dir / 'py_api')
 
     return {'actions': [build],
-            'task_dep': ['cserializer']}
+            'task_dep': ['pymodules']}
 
 
-def task_deps():
-    """Dependencies"""
+def task_peru():
+    """Peru"""
     return {'actions': [f'{sys.executable} -m peru sync']}
 
 

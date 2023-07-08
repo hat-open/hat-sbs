@@ -5,7 +5,7 @@ from hat.sbs import parser
 
 
 def evaluate_modules(modules: typing.Iterable[parser.AstModule]
-                     ) -> typing.Dict[common.Ref, common.Type]:
+                     ) -> dict[common.Ref, common.Type]:
     """Evaluate modules."""
     refs = dict(_builtin_refs)
     modules_dict = {module.name: module for module in modules}

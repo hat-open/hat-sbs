@@ -2,6 +2,8 @@ import pathlib
 import typing
 
 from hat import json
+from hat import util
+
 from hat.sbs import common
 from hat.sbs import evaluator
 from hat.sbs import parser
@@ -21,30 +23,28 @@ class Repository:
 
     def __init__(self,
                  *args: typing.Union['Repository', pathlib.Path, str],
-                 serializer: typing.Optional[typing.Type[serializer.Serializer]] = None):  # NOQA
+                 serializer: typing.Type[serializer.Serializer] = serializer.DefaultSerializer):  # NOQA
         self._serializer = serializer
         self._modules = list(_parse_args(args))
         self._refs = evaluator.evaluate_modules(self._modules)
 
     def encode(self,
-               module_name: typing.Optional[str],
+               module_name: str | None,
                type_name: str,
                value: common.Data
                ) -> bytes:
         """Encode value."""
         ref = common.Ref(module_name, type_name)
-        ser = self._serializer or serializer.default_serializer
-        return ser.encode(self._refs, ref, value)
+        return self._serializer.encode(self._refs, ref, value)
 
     def decode(self,
-               module_name: typing.Optional[str],
+               module_name: str | None,
                type_name: str,
-               data: typing.Union[bytes, bytearray, memoryview]
+               data: util.Bytes
                ) -> common.Data:
         """Decode data."""
         ref = common.Ref(module_name, type_name)
-        ser = self._serializer or serializer.default_serializer
-        return ser.decode(self._refs, ref, memoryview(data))
+        return self._serializer.decode(self._refs, ref, data)
 
     def to_json(self) -> json.Data:
         """Export repository content as json serializable data.
@@ -57,9 +57,9 @@ class Repository:
         return [parser.module_to_json(module) for module in self._modules]
 
     @staticmethod
-    def from_json(data: typing.Union[pathlib.PurePath, common.Data],
+    def from_json(data: pathlib.PurePath | common.Data,
                   *,
-                  serializer: typing.Optional[typing.Type[serializer.Serializer]] = None  # NOQA
+                  serializer: typing.Type[serializer.Serializer] = serializer.DefaultSerializer  # NOQA
                   ) -> 'Repository':
         """Create new repository from content exported as json serializable
         data.
@@ -70,6 +70,7 @@ class Repository:
         """
         if isinstance(data, pathlib.PurePath):
             data = json.decode_file(data)
+
         repo = Repository(serializer=serializer)
         repo._modules = [parser.module_from_json(i) for i in data]
         repo._refs = evaluator.evaluate_modules(repo._modules)
@@ -84,9 +85,12 @@ def _parse_args(args):
             for path in paths:
                 with open(path, encoding='utf-8') as f:
                     yield parser.parse(f.read())
+
         elif isinstance(arg, Repository):
             yield from arg._modules
+
         elif isinstance(arg, str):
             yield parser.parse(arg)
+
         else:
-            raise ValueError()
+            raise ValueError('unsupported arg')
