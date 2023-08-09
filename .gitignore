@@ -4,6 +4,4 @@
 /compile_flags.txt
 /peru
 /src_py/hat/sbs/serializer/_cserializer.*
-/test_pytest/.coverage
-/test_pytest/profile
 __pycache__

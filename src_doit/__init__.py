@@ -7,8 +7,9 @@ from hat.doit import common
 from hat.doit.c import get_task_clang_format
 from hat.doit.docs import (build_sphinx,
                            build_pdoc)
-from hat.doit.py import (build_wheel,
-                         run_pytest,
+from hat.doit.py import (get_task_build_wheel,
+                         get_task_run_pytest,
+                         get_task_run_pip_compile,
                          run_flake8,
                          get_py_versions)
 
@@ -22,6 +23,7 @@ __all__ = ['task_clean_all',
            'task_docs',
            'task_peru',
            'task_format',
+           'task_pip_compile',
            *pymodules.__all__]
 
 
@@ -43,22 +45,14 @@ def task_clean_all():
 
 def task_build():
     """Build"""
-
-    def build():
-        build_wheel(
-            src_dir=src_py_dir,
-            dst_dir=build_py_dir,
-            name='hat-sbs',
-            description='Hat simple binary serializer',
-            url='https://github.com/hat-open/hat-sbs',
-            license=common.License.APACHE2,
-            py_versions=get_py_versions(pymodules.py_limited_api),
-            py_limited_api=pymodules.py_limited_api,
-            platform=common.target_platform,
-            has_ext_modules=True)
-
-    return {'actions': [build],
-            'task_dep': ['pymodules']}
+    return get_task_build_wheel(
+        src_dir=src_py_dir,
+        build_dir=build_py_dir,
+        py_versions=get_py_versions(pymodules.py_limited_api),
+        py_limited_api=pymodules.py_limited_api,
+        platform=common.target_platform,
+        has_ext_modules=True,
+        task_dep=['pymodules'])
 
 
 def task_check():
@@ -69,9 +63,7 @@ def task_check():
 
 def task_test():
     """Test"""
-    return {'actions': [lambda args: run_pytest(pytest_dir, *(args or []))],
-            'pos_arg': 'args',
-            'task_dep': ['pymodules']}
+    return get_task_run_pytest(task_dep=['pymodules'])
 
 
 def task_docs():
@@ -97,3 +89,8 @@ def task_format():
     """Format"""
     yield from get_task_clang_format([*Path('src_c').rglob('*.c'),
                                       *Path('src_c').rglob('*.h')])
+
+
+def task_pip_compile():
+    """Run pip-compile"""
+    return get_task_run_pip_compile()
