@@ -46,8 +46,8 @@ Example usage of SBS serializer::
             'value': 123
         })
     ]
-    encoded_data = repo.encode('Module', 'T', data)
-    decoded_data = repo.decode('Module', 'T', encoded_data)
+    encoded_data = repo.encode('Module.T', data)
+    decoded_data = repo.decode('Module.T', encoded_data)
     assert data == decoded_data
 
 """
@@ -60,5 +60,9 @@ from hat.sbs.serializer import (Serializer,
                                 DefaultSerializer)
 
 
-__all__ = ['Repository', 'Data', 'Serializer', 'CSerializer', 'PySerializer',
+__all__ = ['Repository',
+           'Data',
+           'Serializer',
+           'CSerializer',
+           'PySerializer',
            'DefaultSerializer']

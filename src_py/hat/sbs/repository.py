@@ -7,7 +7,7 @@ from hat import util
 from hat.sbs import common
 from hat.sbs import evaluator
 from hat.sbs import parser
-from hat.sbs import serializer
+from hat.sbs.serializer import Serializer, DefaultSerializer
 
 
 class Repository:
@@ -22,29 +22,27 @@ class Repository:
     """
 
     def __init__(self,
-                 *args: typing.Union['Repository', pathlib.Path, str],
-                 serializer: typing.Type[serializer.Serializer] = serializer.DefaultSerializer):  # NOQA
-        self._serializer = serializer
+                 *args: typing.Union['Repository', pathlib.Path, str]):
         self._modules = list(_parse_args(args))
         self._refs = evaluator.evaluate_modules(self._modules)
 
     def encode(self,
-               module_name: str | None,
-               type_name: str,
-               value: common.Data
-               ) -> bytes:
+               name: str,
+               value: common.Data, *,
+               serializer: typing.Type[Serializer] = DefaultSerializer
+               ) -> util.Bytes:
         """Encode value."""
-        ref = common.Ref(module_name, type_name)
-        return self._serializer.encode(self._refs, ref, value)
+        ref = _parse_name(name)
+        return serializer.encode(self._refs, ref, value)
 
     def decode(self,
-               module_name: str | None,
-               type_name: str,
-               data: util.Bytes
+               name: str,
+               data: util.Bytes, *,
+               serializer: typing.Type[Serializer] = DefaultSerializer
                ) -> common.Data:
         """Decode data."""
-        ref = common.Ref(module_name, type_name)
-        return self._serializer.decode(self._refs, ref, data)
+        ref = _parse_name(name)
+        return serializer.decode(self._refs, ref, data)
 
     def to_json(self) -> json.Data:
         """Export repository content as json serializable data.
@@ -57,10 +55,7 @@ class Repository:
         return [parser.module_to_json(module) for module in self._modules]
 
     @staticmethod
-    def from_json(data: pathlib.PurePath | common.Data,
-                  *,
-                  serializer: typing.Type[serializer.Serializer] = serializer.DefaultSerializer  # NOQA
-                  ) -> 'Repository':
+    def from_json(data: pathlib.PurePath | json.Data) -> 'Repository':
         """Create new repository from content exported as json serializable
         data.
 
@@ -71,7 +66,7 @@ class Repository:
         if isinstance(data, pathlib.PurePath):
             data = json.decode_file(data)
 
-        repo = Repository(serializer=serializer)
+        repo = Repository()
         repo._modules = [parser.module_from_json(i) for i in data]
         repo._refs = evaluator.evaluate_modules(repo._modules)
         return repo
@@ -83,8 +78,7 @@ def _parse_args(args):
             paths = ([arg] if arg.suffix == '.sbs'
                      else arg.rglob('*.sbs'))
             for path in paths:
-                with open(path, encoding='utf-8') as f:
-                    yield parser.parse(f.read())
+                yield parser.parse(path.read_text('utf-8'))
 
         elif isinstance(arg, Repository):
             yield from arg._modules
@@ -94,3 +88,9 @@ def _parse_args(args):
 
         else:
             raise ValueError('unsupported arg')
+
+
+def _parse_name(name):
+    segments = name.split('.', 1)
+    module = segments[0] if len(segments) > 1 else None
+    return common.Ref(module, segments[-1])

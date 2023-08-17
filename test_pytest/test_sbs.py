@@ -25,8 +25,8 @@ def test_example():
             'value': 123
         })
     ]
-    encoded_data = repo.encode('Module', 'T', data)
-    decoded_data = repo.decode('Module', 'T', encoded_data)
+    encoded_data = repo.encode('Module.T', data)
+    decoded_data = repo.decode('Module.T', encoded_data)
     assert data == decoded_data
 
 
@@ -61,62 +61,61 @@ def test_example():
     T19 = Array(String)
 """])
 @pytest.mark.parametrize("t, v", [
-    ('T1', None),
-    ('T2', True),
-    ('T2', False),
-    ('T3', 0),
-    ('T3', 1),
-    ('T3', -1),
-    ('T3', 128),
-    ('T3', -128),
-    ('T3', 256),
-    ('T3', -256),
-    ('T3', 123456789123456),
-    ('T3', -123456789123456),
-    ('T4', 0),
-    ('T4', -1),
-    ('T4', 1),
-    ('T4', 0.5),
-    ('T4', -0.5),
-    ('T4', 123.456),
-    ('T4', -123.456),
-    ('T4', 1e25),
-    ('T4', -1e25),
-    ('T5', ''),
-    ('T5', '0'),
-    ('T5', 'abcdefg'),
-    ('T5', ' \n\'\"\\'),
-    ('T6', b''),
-    ('T6', b'0'),
-    ('T6', b'abcdefg'),
-    ('T6', b' \n\'\"\\'),
-    ('T7', []),
-    ('T7', [1]),
-    ('T7', [1, 2, 3, 4, 5]),
-    ('T7', list(range(100))),
-    ('T8', []),
-    ('T8', [[]]),
-    ('T8', [[], [], []]),
-    ('T8', [[True]]),
-    ('T8', [[], [False]]),
-    ('T8', [[True], [False], [True, False]]),
-    ('T9', {'x': 1, 'y': '1'}),
-    ('T10', ('x', 1)),
-    ('T10', ('y', '1')),
-    ('T11', ('none', None)),
-    ('T11', ('value', 1234)),
-    ('T13', 1234),
-    ('T14', 'abcd'),
-    ('T17', [('none', None), ('value', 1234)]),
-    ('T18', [0, 1.5, -1, 0.005, 1000.1]),
-    ('T19', ['', '', '']),
+    ('Module.T1', None),
+    ('Module.T2', True),
+    ('Module.T2', False),
+    ('Module.T3', 0),
+    ('Module.T3', 1),
+    ('Module.T3', -1),
+    ('Module.T3', 128),
+    ('Module.T3', -128),
+    ('Module.T3', 256),
+    ('Module.T3', -256),
+    ('Module.T3', 123456789123456),
+    ('Module.T3', -123456789123456),
+    ('Module.T4', 0),
+    ('Module.T4', -1),
+    ('Module.T4', 1),
+    ('Module.T4', 0.5),
+    ('Module.T4', -0.5),
+    ('Module.T4', 123.456),
+    ('Module.T4', -123.456),
+    ('Module.T4', 1e25),
+    ('Module.T4', -1e25),
+    ('Module.T5', ''),
+    ('Module.T5', '0'),
+    ('Module.T5', 'abcdefg'),
+    ('Module.T5', ' \n\'\"\\'),
+    ('Module.T6', b''),
+    ('Module.T6', b'0'),
+    ('Module.T6', b'abcdefg'),
+    ('Module.T6', b' \n\'\"\\'),
+    ('Module.T7', []),
+    ('Module.T7', [1]),
+    ('Module.T7', [1, 2, 3, 4, 5]),
+    ('Module.T7', list(range(100))),
+    ('Module.T8', []),
+    ('Module.T8', [[]]),
+    ('Module.T8', [[], [], []]),
+    ('Module.T8', [[True]]),
+    ('Module.T8', [[], [False]]),
+    ('Module.T8', [[True], [False], [True, False]]),
+    ('Module.T9', {'x': 1, 'y': '1'}),
+    ('Module.T10', ('x', 1)),
+    ('Module.T10', ('y', '1')),
+    ('Module.T11', ('none', None)),
+    ('Module.T11', ('value', 1234)),
+    ('Module.T13', 1234),
+    ('Module.T14', 'abcd'),
+    ('Module.T17', [('none', None), ('value', 1234)]),
+    ('Module.T18', [0, 1.5, -1, 0.005, 1000.1]),
+    ('Module.T19', ['', '', '']),
 ])
 def test_serialization(encode_serializer, decode_serializer, schema, t, v):
-    encode_repo = sbs.Repository(schema, serializer=encode_serializer)
-    decode_repo = sbs.Repository(schema, serializer=decode_serializer)
+    repo = sbs.Repository(schema)
 
-    encoded_v = encode_repo.encode('Module', t, v)
-    decoded_v = decode_repo.decode('Module', t, encoded_v)
+    encoded_v = repo.encode(t, v, serializer=encode_serializer)
+    decoded_v = repo.decode(t, encoded_v, serializer=decode_serializer)
 
     assert decoded_v == v
 
@@ -127,10 +126,10 @@ def test_loading_schema_file(tmp_path, serializer):
     with open(path, 'w', encoding='utf-8') as f:
         f.write("module M T = Integer")
 
-    repo = sbs.Repository(path, serializer=serializer)
+    repo = sbs.Repository(path)
     value = 123
-    encoded_value = repo.encode('M', 'T', value)
-    decoded_value = repo.decode('M', 'T', encoded_value)
+    encoded_value = repo.encode('M.T', value, serializer=serializer)
+    decoded_value = repo.decode('M.T', encoded_value, serializer=serializer)
     assert value == decoded_value
 
 
@@ -140,15 +139,15 @@ def test_parametrized_types(serializer):
         module M
 
         T1(x) = Integer
-    """, serializer=serializer)
+    """)
 
-    encoded = repo.encode(None, 'Integer', 1)
-
-    with pytest.raises(Exception):
-        repo.encode('M', 'T1', 1)
+    encoded = repo.encode('Integer', 1, serializer=serializer)
 
     with pytest.raises(Exception):
-        repo.decode('M', 'T1', encoded)
+        repo.encode('M.T1', 1, serializer=serializer)
+
+    with pytest.raises(Exception):
+        repo.decode('M.T1', encoded, serializer=serializer)
 
 
 @pytest.mark.parametrize("serializer", serializers)
@@ -161,10 +160,10 @@ def test_multiple_modules(serializer):
         module M2
 
         T = M1.T
-    """, serializer=serializer)
+    """)
     value = 1
-    encoded_value = repo.encode('M2', 'T', value)
-    decoded_value = repo.decode('M2', 'T', encoded_value)
+    encoded_value = repo.encode('M2.T', value, serializer=serializer)
+    decoded_value = repo.decode('M2.T', encoded_value, serializer=serializer)
     assert value == decoded_value
 
 
@@ -175,13 +174,13 @@ def test_multiple_modules(serializer):
     T1 = Choice { a: Integer }
 """])
 @pytest.mark.parametrize("t,v", [
-    ('T1', ('b', 1))
+    ('Module.T1', ('b', 1))
 ])
 def test_invalid_serialization(serializer, schema, t, v):
-    repo = sbs.Repository(schema, serializer=serializer)
+    repo = sbs.Repository(schema)
     with pytest.raises(Exception):
-        encoded_v = repo.encode('Module', t, v)
-        decoded_v = repo.decode('Module', t, encoded_v)
+        encoded_v = repo.encode(t, v, serializer=serializer)
+        decoded_v = repo.decode(t, encoded_v, serializer=serializer)
         if v == decoded_v:
             raise Exception()
 
@@ -216,10 +215,12 @@ def test_repository_initialization_with_repository(serializer):
         module M
 
         T = Integer
-    """, serializer=serializer)
-    repo2 = sbs.Repository(repo1, serializer=serializer)
+    """)
+    repo2 = sbs.Repository(repo1)
 
-    assert repo1.encode('M', 'T', 1) == repo2.encode('M', 'T', 1)
+    encoded1 = repo1.encode('M.T', 1, serializer=serializer)
+    encoded2 = repo2.encode('M.T', 1, serializer=serializer)
+    assert encoded1 == encoded2
 
 
 def test_invalid_repository_initialization_argument_type():
@@ -232,13 +233,15 @@ def test_invalid_repository_initialization_argument_type():
 ])
 @pytest.mark.parametrize("serializer", serializers)
 def test_large_integer(value, serializer):
-    repo = sbs.Repository("module M", serializer=serializer)
+    repo = sbs.Repository()
 
     if serializer is sbs.CSerializer and value > 0x7FFF_FFFF_FFFF_FFFF:
         with pytest.raises(OverflowError):
-            repo.encode(None, 'Integer', value)
+            repo.encode('Integer', value, serializer=serializer)
 
     else:
-        encoded_value = repo.encode(None, 'Integer', value)
-        decoded_value = repo.decode(None, 'Integer', encoded_value)
+        encoded_value = repo.encode('Integer', value,
+                                    serializer=serializer)
+        decoded_value = repo.decode('Integer', encoded_value,
+                                    serializer=serializer)
         assert value == decoded_value

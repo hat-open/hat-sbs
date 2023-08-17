@@ -41,7 +41,7 @@ class RecordType(typing.NamedTuple):
 
 
 class ChoiceType(typing.NamedTuple):
-    entries: typing.List[typing.Tuple[str, 'Type']]
+    entries: list[typing.Tuple[str, 'Type']]
 
 
 Type: typing.TypeAlias = (Ref |
