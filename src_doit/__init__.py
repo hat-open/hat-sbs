@@ -51,7 +51,7 @@ def task_build():
         py_versions=get_py_versions(pymodules.py_limited_api),
         py_limited_api=pymodules.py_limited_api,
         platform=common.target_platform,
-        has_ext_modules=True,
+        is_purelib=False,
         task_dep=['pymodules'])
 
 
