@@ -2,7 +2,10 @@
 
 set -e
 
-. $(dirname -- "$0")/env.sh
+set -e
+
+PLAYGROUND_PATH=$(dirname "$(realpath "$0")")
+. $PLAYGROUND_PATH/env.sh
 
 TARGET_PLATFORMS="linux_gnu_x86_64
                   linux_gnu_aarch64
@@ -17,7 +20,7 @@ for TARGET_PLATFORM in $TARGET_PLATFORMS; do
     export TARGET_PLATFORM
     $PYTHON -m doit clean_all
     $PYTHON -m doit
-    cp $ROOT_PATH/build/py/dist/*.whl $DIST_PATH
+    cp $ROOT_PATH/build/py/*.whl $DIST_PATH
 done
 
 IMAGES="linux/arm/v7/build-hat-sbs:debian11-cpy3.11"
@@ -46,7 +49,7 @@ pip install --upgrade pip hat-json
 pip install --upgrade -r requirements.pip.txt
 doit clean_all
 doit
-cp build/py/dist/*.whl dist
+cp build/py/*.whl dist
 EOF
 done
 
