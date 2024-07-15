@@ -1,10 +1,10 @@
-import typing
+from collections.abc import Iterable
 
 from hat.sbs import common
 from hat.sbs import parser
 
 
-def evaluate_modules(modules: typing.Iterable[parser.AstModule]
+def evaluate_modules(modules: Iterable[parser.AstModule]
                      ) -> dict[common.Ref, common.Type]:
     """Evaluate modules."""
     refs = dict(_builtin_refs)

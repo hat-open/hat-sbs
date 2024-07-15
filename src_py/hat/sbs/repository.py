@@ -29,7 +29,7 @@ class Repository:
     def encode(self,
                name: str,
                value: common.Data, *,
-               serializer: typing.Type[Serializer] = DefaultSerializer
+               serializer: type[Serializer] = DefaultSerializer
                ) -> util.Bytes:
         """Encode value."""
         ref = _parse_name(name)
@@ -38,7 +38,7 @@ class Repository:
     def decode(self,
                name: str,
                data: util.Bytes, *,
-               serializer: typing.Type[Serializer] = DefaultSerializer
+               serializer: type[Serializer] = DefaultSerializer
                ) -> common.Data:
         """Decode data."""
         ref = _parse_name(name)

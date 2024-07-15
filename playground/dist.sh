@@ -2,8 +2,6 @@
 
 set -e
 
-set -e
-
 PLAYGROUND_PATH=$(dirname "$(realpath "$0")")
 . $PLAYGROUND_PATH/env.sh
 
@@ -23,14 +21,15 @@ for TARGET_PLATFORM in $TARGET_PLATFORMS; do
     cp $ROOT_PATH/build/py/*.whl $DIST_PATH
 done
 
-IMAGES="linux/arm/v7/build-hat-sbs:debian11-cpy3.11"
+IMAGES="linux/arm/v7/build-hat-sbs:debian11-cpy3.12"
 
 for IMAGE in $IMAGES; do
     $PYTHON -m doit clean_all
+    DOCKERFILE=$PLAYGROUND_PATH/dockerfiles/$(echo $IMAGE | cut -d ':' -f 2)
     PLATFORM=$(dirname $IMAGE)
     IMAGE_ID=$(podman images -q $IMAGE)
     podman build --platform $PLATFORM \
-                 -f $RUN_PATH/dockerfiles/$IMAGE \
+                 -f $DOCKERFILE \
                  -t $IMAGE \
                  .
     if [ -n "$IMAGE_ID" -a "$IMAGE_ID" != "$(podman images -q $IMAGE)" ]; then
