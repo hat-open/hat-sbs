@@ -6,7 +6,7 @@
 #include <hat/buff.h>
 
 #define HAT_SBS_SUCCESS 0
-#define HAT_SBS_ERROR 1
+#define HAT_SBS_ERROR (-1)
 
 
 #ifdef __cplusplus

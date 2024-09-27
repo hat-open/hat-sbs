@@ -1,7 +1,7 @@
 """Simple binary serializer
 
 This implementation of SBS encoder/decoder translates between SBS types and
-Python types according to following translation table:
+Python types according to following translation table::
 
     +----------+------------------+
     | SBS type | Python type      |
@@ -18,11 +18,11 @@ Python types according to following translation table:
     +----------+------------------+
     | Bytes    | bytes            |
     +----------+------------------+
-    | Array    | List[Data]       |
+    | Array    | list[Data]       |
     +----------+------------------+
-    | Record   | Dict[str, Data]  |
+    | Record   | dict[str, Data]  |
     +----------+------------------+
-    | Choice   | Tuple[str, Data] |
+    | Choice   | tuple[str, Data] |
     +----------+------------------+
 
 Example usage of SBS serializer::

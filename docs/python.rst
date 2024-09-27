@@ -1,5 +1,3 @@
-.. _hat-sbs:
-
 `hat.sbs` - Python simple binary serialization library
 ======================================================
 
@@ -28,22 +26,20 @@ translation table:
     +----------+------------------+
     | Bytes    | bytes            |
     +----------+------------------+
-    | Array    | List[Data]       |
+    | Array    | list[Data]       |
     +----------+------------------+
-    | Record   | Dict[str, Data]  |
+    | Record   | dict[str, Data]  |
     +----------+------------------+
-    | Choice   | Tuple[str, Data] |
+    | Choice   | tuple[str, Data] |
     +----------+------------------+
 
 `hat.sbs` provides data type definition as::
 
-    Data = typing.Union[None, bool, int, float, str, bytes,
-                        typing.List['Data'],
-                        typing.Dict[str, 'Data'],
-                        typing.Tuple[str, 'Data']]
+    Data: typing.TypeAlias = (None | bool | int | float | str | bytes |
+                              typing.List['Data'] |
+                              typing.Dict[str, 'Data'] |
+                              typing.Tuple[str, 'Data'])
 
-
-.. _hat-sbs-Repository:
 
 Repository
 ----------
@@ -53,45 +49,40 @@ Instance of `Repository` can be represented as JSON data enabling efficient
 storage and reconstruction of SBS repositories.
 
 Once `Repository` instance is initialized, methods `encode` and `decode`
-are used for SBS data serialization.
+are used for SBS data serialization. `hat.sbs` provides two serializer
+implementations:
 
-During initialization, `Repository` accepts arbitrary implementation
-of SBS serializer. `hat.sbs` provides these serializer implementations:
+* `hat.sbs.CSerializer` (default)
 
-    * `hat.sbs.CSerializer` (default)
+  SBS serializer implemented as C extension.
 
-        SBS serializer implemented as C extension.
+* `hat.sbs.PySerializer`
 
-    * `hat.sbs.PySerializer`
-
-        Pure Python implementation of SBS serializer.
+  Pure Python implementation of SBS serializer.
 
 ::
 
     class Repository:
 
         def __init__(self,
-                     *args: typing.Union['Repository', pathlib.Path, str],
-                     serializer=serializer.CSerializer): ...
+                     *args: typing.Union['Repository', pathlib.Path, str]): ...
 
         def encode(self,
-                   module_name: typing.Optional[str],
-                   type_name: str,
-                   value: common.Data
-                   ) -> bytes: ...
+                   name: str,
+                   value: common.Data, *,
+                   serializer: type[Serializer] = DefaultSerializer
+                   ) -> util.Bytes: ...
 
         def decode(self,
-                   module_name: typing.Optional[str],
-                   type_name: str,
-                   data: typing.Union[bytes, bytearray, memoryview]
+                   name: str,
+                   data: util.Bytes, *,
+                   serializer: type[Serializer] = DefaultSerializer
                    ) -> common.Data: ...
 
         def to_json(self) -> json.Data: ...
 
         @staticmethod
-        def from_json(data: typing.Union[pathlib.PurePath, common.Data],
-                      *,
-                      serializer=serializer.CSerializer
+        def from_json(data: pathlib.PurePath | common.Data,
                       ) -> 'Repository': ...
 
 Example usage::
@@ -125,4 +116,4 @@ API
 
 API reference is available as part of generated documentation:
 
-    * `Python hat.sbs module <py_api/hat/sbs/index.html>`_
+    * `Python hat.sbs module <py_api/hat/sbs.html>`_
