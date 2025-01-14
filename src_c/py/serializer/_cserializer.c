@@ -27,15 +27,6 @@ static inline bool is_type(PyObject *inst, PyObject *cls) {
 }
 
 
-static inline int get_legacy_buffer(PyObject *obj, void **buffer,
-                                    Py_ssize_t *buffer_len) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return PyObject_AsReadBuffer(obj, (const void **)buffer, buffer_len);
-#pragma GCC diagnostic pop
-}
-
-
 static PyObject *resolve_ref(module_state_t *module_state, PyObject *refs,
                              PyObject *t) {
     while (is_type(t, module_state->common_Ref)) {
@@ -574,15 +565,22 @@ static PyObject *decode(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "OOO", &refs, &t, &data))
         return NULL;
 
-    if (!PyMemoryView_Check(data))
-        return NULL;
+    hat_buff_t buff = {.data = NULL, .size = 0, .pos = 0};
 
-    void *buff_data;
-    Py_ssize_t buff_size;
-    if (get_legacy_buffer(data, &buff_data, &buff_size))
-        return NULL;
+    // TODO use PyObject_GetBuffer (stable abi 3.11)
 
-    hat_buff_t buff = {.data = buff_data, .size = buff_size, .pos = 0};
+    if (PyBytes_Check(data)) {
+        buff.data = (uint8_t *)PyBytes_AsString(data);
+        buff.size = PyBytes_Size(data);
+
+    } else if (PyByteArray_Check(data)) {
+        buff.data = (uint8_t *)PyByteArray_AsString(data);
+        buff.size = PyByteArray_Size(data);
+
+    } else {
+        PyErr_SetString(PyExc_TypeError, "unsupported data type");
+        return NULL;
+    }
 
     return decode_generic(&buff, module_state, refs, t);
 }
