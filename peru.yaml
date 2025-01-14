@@ -3,7 +3,7 @@ imports:
 
 git module hat-util:
     url: https://github.com/hat-open/hat-util
-    rev: 17532f2153ef98c14b774dd89fa63063bac36123
+    rev: 4faa641077ba6eb5fe27cd1fdcc74820e683566c
     pick: src_c
 
 # cp module hat-util:

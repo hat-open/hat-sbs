@@ -52,7 +52,7 @@ Example usage of SBS serializer::
 
 """
 
-from hat.sbs.common import Data
+from hat.sbs.common import Ref, Data
 from hat.sbs.repository import Repository
 from hat.sbs.serializer import (Serializer,
                                 CSerializer,
@@ -60,8 +60,9 @@ from hat.sbs.serializer import (Serializer,
                                 DefaultSerializer)
 
 
-__all__ = ['Repository',
+__all__ = ['Ref',
            'Data',
+           'Repository',
            'Serializer',
            'CSerializer',
            'PySerializer',

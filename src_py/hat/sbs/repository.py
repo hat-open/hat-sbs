@@ -27,21 +27,21 @@ class Repository:
         self._refs = evaluator.evaluate_modules(self._modules)
 
     def encode(self,
-               name: str,
+               name: str | common.Ref,
                value: common.Data, *,
                serializer: type[Serializer] = DefaultSerializer
                ) -> util.Bytes:
         """Encode value."""
-        ref = _parse_name(name)
+        ref = _parse_name(name) if isinstance(name, str) else name
         return serializer.encode(self._refs, ref, value)
 
     def decode(self,
-               name: str,
+               name: str | common.Ref,
                data: util.Bytes, *,
                serializer: type[Serializer] = DefaultSerializer
                ) -> common.Data:
         """Decode data."""
-        ref = _parse_name(name)
+        ref = _parse_name(name) if isinstance(name, str) else name
         return serializer.decode(self._refs, ref, data)
 
     def to_json(self) -> json.Data:
