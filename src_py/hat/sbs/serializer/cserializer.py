@@ -20,8 +20,4 @@ class CSerializer(common.Serializer):
         if not _cserializer:
             raise Exception('implementation not available')
 
-        # HACK only bytes and bytearray until stable abi 3.11
-        if isinstance(data, memoryview):
-            data = data.obj
-
-        return _cserializer.decode(refs, t, data)
+        return _cserializer.decode(refs, t, memoryview(data))
