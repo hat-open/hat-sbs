@@ -26,6 +26,9 @@ static inline bool is_type(PyObject *inst, PyObject *cls) {
     return Py_TYPE(inst) == (PyTypeObject *)cls;
 }
 
+// HACK replace with PyObject_GetBuffer (stable abi 3.11)
+int PyObject_AsReadBuffer(PyObject *obj, const void **buffer,
+                          Py_ssize_t *buffer_len);
 
 static inline int get_legacy_buffer(PyObject *obj, void **buffer,
                                     Py_ssize_t *buffer_len) {
